@@ -1,0 +1,32 @@
+env_id: env_unseen_eval_v1
+scene: 04_Eval_UnseenMaze_3v2
+rule_config: maze_unseen_eval_config.yaml
+mode: evaluation
+team_setup:
+  sentinels: 3
+  runners: 2
+episode:
+  max_steps: 5000
+  timeout_runner_success: true
+maze:
+  type: dynamic
+  seeds:
+    - 101
+    - 202
+    - 303
+  layout_split: unseen
+spawning:
+  randomize_spawns: true
+  spawn_safe_cells: true
+dynamic_walls:
+  enabled: true
+  shift_interval_steps: 500
+  shift_mode: low_frequency
+  allow_exit_blocking: false
+exits:
+  enabled: true
+  count: 2
+observations:
+  use_rays: true
+  use_memory: true
+  use_buffer_sensors: true

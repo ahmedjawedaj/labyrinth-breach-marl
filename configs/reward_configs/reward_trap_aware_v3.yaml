@@ -1,0 +1,25 @@
+reward_id: reward_trap_aware_v3
+description: Trap-aware Sentinel shaping for dynamic maze cooperation studies.
+sentinel:
+  team_full_capture: 1.0
+  timeout_or_escape_penalty: -1.0
+  individual_capture_bonus: 0.2
+  encirclement_bonus: 0.02
+  cluster_penalty: -0.01
+  exit_guard_shaping: 0.01
+runner:
+  team_exit_success: 1.0
+  both_captured_penalty: -1.0
+  tagged_penalty: -0.2
+  survival_step_bonus: 0.001
+  exploration_bonus: 0.01
+  team_separation_shaping: 0.005
+trap_aware:
+  enabled: true
+  pincer_formation_bonus: 0.025
+  opposite_side_enclosure_bonus: 0.025
+  dead_end_forcing_bonus: 0.02
+  exit_denial_pressure_bonus: 0.015
+  corridor_control_bonus: 0.015
+audit:
+  log_reward_events: true

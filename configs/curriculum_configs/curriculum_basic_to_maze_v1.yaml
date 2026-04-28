@@ -1,0 +1,12 @@
+curriculum_id: curriculum_basic_to_maze_v1
+stages:
+  - stage_id: open_arena_fixed_spawn
+    env_config: configs/env_configs/env_openarena_v1.yaml
+    completion_criteria:
+      min_episodes: 1000
+      sentinel_win_rate_threshold: 0.65
+  - stage_id: static_maze_random_spawn
+    env_config: configs/env_configs/env_staticmaze_v1.yaml
+    completion_criteria:
+      min_episodes: 2000
+      sentinel_win_rate_threshold: 0.55

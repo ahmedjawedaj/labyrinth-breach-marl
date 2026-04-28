@@ -1,0 +1,12 @@
+run_id: LB_3v2_staticmaze_shared_seed42_v1
+seed: 42
+scene: 02_StaticMaze_3v2
+env_config: configs/env_configs/env_staticmaze_v1.yaml
+reward_config: configs/reward_configs/reward_shared_plus_individual_v2.yaml
+trainer_config: configs/trainer_configs/ppo_staticmaze_3v2.yaml
+curriculum_config: configs/curriculum_configs/curriculum_basic_to_maze_v1.yaml
+curriculum_stage: static_maze_random_spawn
+mode: training
+commit_hash: TBD
+artifact_uri: TBD
+notes: Static maze PPO run with individual shaping for stronger pursuit/evasion coordination.

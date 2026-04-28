@@ -1,0 +1,31 @@
+env_id: env_openarena_v1
+scene: 01_Baseline_OpenArena_3v2
+rule_config: asymmetry_config.yaml
+team_setup:
+  sentinels: 3
+  runners: 2
+episode:
+  max_steps: 3000
+  timeout_runner_success: true
+arena:
+  type: open
+  size_x: 24.0
+  size_z: 24.0
+spawning:
+  randomize_spawns: false
+  seed: 42
+dynamic_walls:
+  enabled: false
+exits:
+  enabled: true
+observations:
+  use_rays: true
+  use_memory: true
+  use_buffer_sensors: true
+  include_teammates: true
+  include_opponents: true
+  include_exit_vector: true
+agent_dynamics:
+  sentinel_speed: 4.0
+  runner_speed: 4.5
+  capture_radius: 1.25

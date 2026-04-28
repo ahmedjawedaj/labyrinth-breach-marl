@@ -1,0 +1,79 @@
+curriculum_id: curriculum_3v2_full_v1
+default_stage_index: 0
+stages:
+  - stage_id: static_maze_fixed_spawn_easy
+    scene: 02_StaticMaze_3v2
+    rule_config: configs/env_configs/maze_static_config.yaml
+    maze:
+      enabled: true
+      mode: static
+      seed: 42
+      randomize_spawns: false
+      randomize_exits: false
+    dynamic_walls:
+      enabled: false
+      shift_interval_seconds: 0.0
+      shift_intensity: 0
+      safe_buffer: 1.5
+      allow_exit_blocking: false
+      wall_lowered_offset: 3.0
+    completion_criteria:
+      min_episodes: 1200
+      sentinel_win_rate_threshold: 0.62
+  - stage_id: static_maze_random_spawn
+    scene: 02_StaticMaze_3v2
+    rule_config: configs/env_configs/maze_static_config.yaml
+    maze:
+      enabled: true
+      mode: static
+      seed: 42
+      randomize_spawns: true
+      randomize_exits: true
+    dynamic_walls:
+      enabled: false
+      shift_interval_seconds: 0.0
+      shift_intensity: 0
+      safe_buffer: 1.5
+      allow_exit_blocking: false
+      wall_lowered_offset: 3.0
+    completion_criteria:
+      min_episodes: 2200
+      sentinel_win_rate_threshold: 0.55
+  - stage_id: dynamic_maze_low_frequency
+    scene: 03_DynamicMaze_3v2
+    rule_config: configs/env_configs/maze_dynamic_config.yaml
+    maze:
+      enabled: true
+      mode: dynamic
+      seed: 42
+      randomize_spawns: true
+      randomize_exits: true
+    dynamic_walls:
+      enabled: true
+      shift_interval_seconds: 20.0
+      shift_intensity: 1
+      safe_buffer: 1.75
+      allow_exit_blocking: false
+      wall_lowered_offset: 3.0
+    completion_criteria:
+      min_episodes: 3200
+      sentinel_win_rate_threshold: 0.50
+  - stage_id: dynamic_maze_high_frequency_tactical
+    scene: 03_DynamicMaze_3v2
+    rule_config: configs/env_configs/maze_dynamic_config.yaml
+    maze:
+      enabled: true
+      mode: dynamic
+      seed: 84
+      randomize_spawns: true
+      randomize_exits: true
+    dynamic_walls:
+      enabled: true
+      shift_interval_seconds: 8.0
+      shift_intensity: 3
+      safe_buffer: 1.25
+      allow_exit_blocking: false
+      wall_lowered_offset: 3.0
+    completion_criteria:
+      min_episodes: 3000
+      sentinel_win_rate_threshold: 0.45

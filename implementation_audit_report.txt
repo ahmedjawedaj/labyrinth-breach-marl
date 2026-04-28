@@ -1,0 +1,266 @@
+1. Executive Summary
+
+- The repository contains a working Unity ML-Agents 3v2 pursuit-evasion implementation with dynamic maze, exits, capture lifecycle, reward engine, and run-scoped logging.
+- The active implementation is state/vector plus scripted ray/LOS driven (not image observations), which matches current model usage.
+- Training/eval orchestration is substantial (train_with_metadata.py, evaluate_policy.py, multiseed matrix scripts), with strict artifact validation and KPI summarization.
+- Biggest technical risks are artifact/provenance inconsistencies, duplicate Unity code trees (unity/Assets/Scripts and unity/Scripts), and stale summary outputs not matching existing run artifacts.
+- For semester submission: good enough. For paper framing: potentially workshop/student-paper viable, but requires consistency cleanup and explicit validation evidence.
+
+2. Actual Repo Structure
+
+Top-level structure (verified):
+- unity/
+- python/
+- configs/
+- docs/
+- results/
+- scripts/
+- experiments/ (exists, empty)
+- paper/ (not present)
+- media/ (not present)
+
+Organization quality:
+- Mixed: core structure is clear, but messy due to duplicate Unity trees, nested extra Unity project folder, and stale/contradictory summary artifacts in results.
+
+Important folder contents:
+- unity/: scenes, prefabs, scripts, materials, ML-Agents models/timers, Library, Logs, plus duplicated non-Assets trees.
+- python/: metrics_calculators and plotting_scripts.
+- configs/: manifests, trainer, env, reward, curriculum, runtime overrides.
+- docs/: audits, protocols, architecture and reporting docs.
+- results/: run/eval artifacts, logs, metadata, KPIs, summaries.
+- scripts/: orchestration, validation, KPI generation, report builders.
+
+Dead/duplicate folders:
+- Duplicate code tree risk: unity/Scripts mirrors unity/Assets/Scripts.
+- Duplicate prefab/scene tree risk: unity/Prefabs and unity/Scenes alongside unity/Assets/Prefabs and unity/Assets/Scenes.
+- Likely extra Unity project artifact: Labyrinth-Breach/New Unity Project.
+
+3. Actual Implemented Environment
+
+- 3v2 is implemented (3 Sentinels, 2 Runners), verified in SpawnManager defaults and env configs.
+- 1v1 as active main setup: not verified.
+- Training scene pathing points to 03_DynamicMaze_3v2 (with curriculum stages also using static maze scene).
+- Evaluation manifests point to seen (03_DynamicMaze_3v2) and unseen (04_Eval_UnseenMaze_3v2).
+- Seen/unseen split exists in manifests/configs.
+- Static maze implemented (02_StaticMaze_3v2 path and configs).
+- Dynamic maze implemented (03_DynamicMaze_3v2 and dynamic wall configs).
+- Exits implemented (ExitZoneController and distance-based exit checks).
+- Shifting walls implemented and connected to episode loop via DynamicWallController + env callbacks.
+- Captures implemented and captured runners are deactivated/ignored by filters.
+- Target switching after first capture is not a separately named subsystem, but nearest-visible-opponent + memory updates support retargeting behavior.
+
+4. Unity Architecture Review
+
+Scenes:
+- unity/Assets/Scenes/01_Baseline_OpenArena_3v2.unity
+- unity/Assets/Scenes/02_StaticMaze_3v2.unity
+- unity/Assets/Scenes/03_DynamicMaze_3v2.unity
+- unity/Assets/Scenes/04_Eval_UnseenMaze_3v2.unity
+
+Prefabs:
+- unity/Assets/Prefabs/Sentinel.prefab
+- unity/Assets/Prefabs/Runner.prefab
+- unity/Assets/Prefabs/DynamicWallPillar.prefab
+
+Key scripts by role:
+- BaseAgent: unity/Assets/Scripts/Agents/BaseAgent.cs
+- SentinelAgent: unity/Assets/Scripts/Agents/SentinelAgent.cs
+- RunnerAgent: unity/Assets/Scripts/Agents/RunnerAgent.cs
+- Environment controller: unity/Assets/Scripts/Environment/PursuitEvasionEnvController.cs
+- Maze generator: unity/Assets/Scripts/Environment/MazeGenerator.cs
+- Dynamic wall controller: unity/Assets/Scripts/Environment/DynamicWallController.cs
+- Exit zone controller: unity/Assets/Scripts/Environment/ExitZoneController.cs
+- Reward engine: unity/Assets/Scripts/Rewards/RewardEngine.cs
+- Trap/coordination detector: unity/Assets/Scripts/Rewards/TrapEventDetector.cs
+- Memory: unity/Assets/Scripts/Sensors/LastKnownPositionMemory.cs
+- Visibility tracker: unity/Assets/Scripts/Sensors/VisibilityTracker.cs
+- Logging/KPI: EpisodeLogger.cs, StepLogger.cs, ReplayEventExporter.cs, CoordinationKPIExporter.cs, RunLogPathResolver.cs
+
+ScriptableObjects/config assets:
+- Custom ScriptableObject classes in Assets/Scripts: not found.
+- .asset config assets in unity/Assets: not found.
+- Configuration is YAML/text-driven via configs + loader scripts.
+
+5. Observation System Review
+
+Implemented:
+- Vector observations: yes (BaseAgent.CollectObservations).
+- Ray observations: yes (RaySensorBuilder).
+- Memory observations: yes (LastKnownPositionMemory usage via ObservationAssembler).
+- Opponent summary: yes (nearest and second nearest opponent summary in ObservationAssembler).
+- Environment context: time remaining, nearest exit distance/vector, wall proximity, wall-shift timer.
+- LOS/visibility logic: yes (VisibilityTracker).
+
+Not implemented/found:
+- Camera/RenderTexture visual observations: not found.
+- Active BufferSensorComponent wiring: not found (entity row writer exists but active pipeline appears vector-centric).
+
+Coverage audit:
+- Teammate/opponent/exit/wall context: implemented in vector/ray composition.
+- Alive/captured filtering: implemented in multiple loops and checks.
+- Time-since-last-seen memory: implemented via memory tracker and decay handling.
+
+6. Reward System Review
+
+Core files:
+- unity/Assets/Scripts/Rewards/RewardEngine.cs
+- unity/Assets/Scripts/Rewards/RewardConfig.cs
+- unity/Assets/Scripts/Rewards/SentinelRewardPolicy.cs
+- unity/Assets/Scripts/Rewards/RunnerRewardPolicy.cs
+- unity/Assets/Scripts/Rewards/RewardEvent.cs
+
+Implemented events:
+- Capture reward/penalty
+- Survival reward
+- Wall loop penalty
+- Exploration bonus
+- Orbit stall penalty
+- Sentinel chase progress/regression
+- Runner evade progress/threat approach penalty
+- Team terminal rewards/losses (exit, timeout, full capture)
+- Trap-aware rewards (pincer, enclosure, dead-end forcing, corridor control, exit denial)
+- Cluster penalty
+
+Active or planned:
+- Implemented in runtime code; activation depends on loaded reward config and trap_aware.enabled.
+
+Risks:
+- Provenance mismatch risk between metadata-declared reward config and episode log reward_config_path in some artifacts.
+- Reward shaping complexity is moderate-to-messy, with many interacting terms.
+- Potential exploit risks if tactical events are gamed without robust validation.
+
+7. Maze and Wall System Review
+
+- Walls are created procedurally by MazeGenerator.
+- Static and unseen layouts supported; open arena mode also exists.
+- Dynamic walls are controlled by DynamicWallController with shift interval and intensity.
+- Safe shift checks are present (agent proximity buffer, optional exit blocking restrictions).
+- Env controller performs post-shift position sanitization.
+- Movement anti-pass-through exists via constrained movement, sphere casts, overlap correction, and wall tag filtering.
+- Physics/layer fragility risk remains due to broad default masks (~0) unless carefully configured.
+
+Likely issue causes for historical wall/path/collision problems:
+- Duplicate scene/script trees causing config/inspector drift.
+- Broad masks allowing unintended colliders in ray/visibility checks.
+- Runtime edge cases in dynamic shifts not fully statically verifiable.
+
+8. Capture and Episode Lifecycle Review
+
+- Spawn/reset: handled by SpawnManager and env episode flow.
+- Runner state lifecycle: ResetState clears captured/escaped; capture deactivates runner.
+- Capture loop: sentinel TryCaptureRunner checks distance and marks capture.
+- Episode outcomes: all runners captured, runner exit reached, runner timeout win, timeout no winner.
+- Terminal checks are gated by minimum elapsed time and travel thresholds.
+
+Critical checks:
+- After first runner capture, sentinels can continue chasing remaining runner: yes by loop logic.
+- Captured runners remain targetable: intended no; filters skip captured/inactive runners.
+- Episode ends too early: guarded by arming conditions, but runtime tuning outcomes are not fully statically verifiable.
+
+9. Training and Config Review
+
+Trainer configs present:
+- PPO: ppo_openarena_3v2.yaml, ppo_staticmaze_3v2.yaml, ppo_dynamicmaze_3v2.yaml
+- MA-POCA: mapoca_dynamicmaze_3v2.yaml
+
+Config layers present:
+- Env configs, reward configs, curriculum configs, experiment manifests.
+
+Seed and run policy:
+- Official matrix seeds: 42, 101, 202.
+- Scene and split binding included in env/manifests.
+- Behavior names Sentinel/Runner expected and used in metadata checks.
+
+Train/eval separation:
+- Training via scripts/train_with_metadata.py.
+- Evaluation via scripts/evaluate_policy.py with --resume --inference and strict raw log + KPI checks.
+
+Pipeline assessment:
+- Strong structure overall, but output consistency in results summaries is fragile/stale in places.
+
+10. Logging and Metrics Review
+
+Routing:
+- Run-scoped routing to results/<run_id>/logs implemented via RunLogPathResolver and run_log_artifacts.py.
+
+Required logs:
+- episode_log.csv, agent_step_log.csv, reward_audit.csv, replay_events.csv
+- Supported and present in many eval folders under results/seed_*/eval/.../logs.
+
+Metrics:
+- KPI summarization is code-driven via scripts/summarize_eval_kpis.py.
+- Coordination and tactical metrics are implemented (pincer/corridor/exit-denial/enclosure and proxies).
+- Some computed values are proxies and explicitly noted as proxies.
+
+Seen vs unseen:
+- Supported via manifests and matrix scripts.
+- Per-run seen/unseen artifacts exist.
+- Some aggregate/official summary outputs appear stale relative to run-level artifacts.
+
+11. Code Quality Review
+
+Classification:
+- Code quality: acceptable
+- Modularity: acceptable
+- Naming quality: acceptable to strong
+- Duplication: risky
+- Config-driven design: strong
+- Dead code ambiguity: acceptable (some partially integrated paths)
+- Hacks/workarounds: acceptable
+- Scene-coupled logic: acceptable
+- Reproducibility readiness: acceptable
+- GitHub publication readiness: acceptable after cleanup
+
+12. Research/Paper Readiness Review
+
+Genuinely implemented and paper-relevant:
+- Dynamic topology (shifting walls)
+- 3v2 pursuit-evasion with exits/captures
+- LOS + memory-driven state observations
+- Trap/coordination event detection and tactical rewarding
+- Multiseed seen/unseen evaluation pipeline with KPI outputs
+
+Planned or insufficiently verified:
+- Consistent freshness/alignment of aggregate summary artifacts
+- Fully validated tactical metric robustness across all runs
+- Reward provenance consistency across metadata/log outputs
+
+Positioning:
+- Strongest angle: coordination under dynamic topology + partial observability in asymmetric 3v2 pursuit-evasion.
+- Current readiness: student-paper/workshop-draft trajectory (after consistency cleanup).
+
+13. Top Risks
+
+1) Duplicate Unity code/asset trees causing drift.
+2) Extra nested Unity project directory causing confusion.
+3) Stale summary artifacts vs run-level truth.
+4) Reward config provenance mismatch risk.
+5) Buffer sensor intent vs active pipeline ambiguity.
+6) Broad masks (~0) may include unintended colliders.
+7) Large env controller increases regression risk.
+8) Reward shaping complexity may be exploitable.
+9) Empty build scene list can hide deployment assumptions.
+10) KPI parsing/proxy assumptions require sanity validation.
+
+14. Top Next Actions
+
+1) Canonicalize one Unity source tree and deprecate duplicates.
+2) Isolate/remove extra nested Unity project artifacts.
+3) Regenerate official summaries from current raw run logs.
+4) Add automated reward-config provenance checks.
+5) Add CI check for canonical scene/prefab/script references.
+6) Clarify or wire buffer-sensor path explicitly.
+7) Validate ray/visibility/movement masks and layer policy.
+8) Stress test dynamic wall safety edge cases over multiseed runs.
+9) Add KPI unit checks for replay timestamp parsing and sanity bounds.
+10) Create paper-release reproducibility snapshot pipeline.
+
+15. Final Verdict
+
+- Implemented now: substantial 3v2 Unity ML-Agents system with dynamic maze, exits, captures, memory+LOS observations, tactical rewards, and robust raw logging.
+- Still planned/incomplete evidence: aggregate summary consistency and full provenance alignment.
+- Strong: architectural breadth and code-driven evaluation instrumentation.
+- Weak: duplication and artifact consistency hygiene.
+- Semester submission: yes, good enough.
+- Paper potential: yes, worth pursuing after consistency/provenance cleanup.
+- Missing evidence: regenerated consistent summary artifacts and explicit validation traces tying claimed metrics to raw logs end-to-end.

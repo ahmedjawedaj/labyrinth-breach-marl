@@ -1,0 +1,11 @@
+run_id: LB_memory_ablation_seen_eval_seed42_v1
+seed: 42
+scene: 03_DynamicMaze_3v2
+mode: evaluation
+env_config: env_dynamicmaze_v1.yaml
+rule_config: maze_dynamic_config.yaml
+trainer_config: ppo_dynamicmaze_3v2.yaml
+reward_config: reward_dynamicmaze_memory_v4.yaml
+curriculum_config: configs/curriculum_configs/curriculum_memory_ablation_on_v1.yaml
+layout_split: seen
+notes: Memory ablation seen-layout evaluation.

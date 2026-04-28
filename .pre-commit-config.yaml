@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: check-large-artifacts
+        name: Check large artifacts and Git LFS usage
+        entry: python scripts/check_large_artifacts.py
+        language: system
+        pass_filenames: true

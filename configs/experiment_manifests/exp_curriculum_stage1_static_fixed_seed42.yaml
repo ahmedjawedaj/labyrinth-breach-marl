@@ -1,0 +1,10 @@
+run_id: LB_3v2_curriculum_stage1_seed42_v1
+seed: 42
+scene: 02_StaticMaze_3v2
+env_config: configs/env_configs/env_staticmaze_v1.yaml
+reward_config: configs/reward_configs/reward_shared_plus_individual_v2.yaml
+trainer_config: configs/trainer_configs/ppo_openarena_3v2.yaml
+curriculum_config: configs/curriculum_configs/curriculum_3v2_full_v1.yaml
+curriculum_stage: static_maze_fixed_spawn_easy
+mode: training
+notes: Curriculum stage 1 - static maze with fixed spawn and fixed exits.

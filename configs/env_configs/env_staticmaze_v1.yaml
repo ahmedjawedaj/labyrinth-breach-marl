@@ -1,0 +1,36 @@
+env_id: env_staticmaze_v1
+scene: 02_StaticMaze_3v2
+rule_config: maze_static_config.yaml
+team_setup:
+  sentinels: 3
+  runners: 2
+episode:
+  max_steps: 4000
+  timeout_runner_success: true
+maze:
+  type: static
+  seed: 42
+  layout_id: static_v1
+spawning:
+  randomize_spawns: true
+  spawn_safe_cells: true
+dynamic_walls:
+  enabled: false
+  shift_interval_seconds: 0.0
+  shift_intensity: 0
+  safe_buffer: 1.5
+  allow_exit_blocking: false
+exits:
+  enabled: true
+  count: 2
+observations:
+  use_rays: true
+  use_memory: true
+  use_buffer_sensors: true
+  include_teammates: false
+  include_opponents: true
+  include_exit_vector: true
+agent_dynamics:
+  sentinel_speed: 2.2
+  runner_speed: 2.4
+  capture_radius: 1.1

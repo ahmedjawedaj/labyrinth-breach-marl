@@ -1,0 +1,25 @@
+curriculum_id: curriculum_maze_to_dynamic_v2
+stages:
+  - stage_id: static_maze_random_spawn
+    env_config: configs/env_configs/env_staticmaze_v1.yaml
+    completion_criteria:
+      min_episodes: 2000
+      sentinel_win_rate_threshold: 0.55
+  - stage_id: dynamic_maze_low_frequency
+    env_config: configs/env_configs/env_dynamicmaze_v1.yaml
+    overrides:
+      dynamic_walls:
+        shift_mode: low_frequency
+        shift_interval_steps: 750
+    completion_criteria:
+      min_episodes: 3000
+      sentinel_win_rate_threshold: 0.5
+  - stage_id: dynamic_maze_high_frequency
+    env_config: configs/env_configs/env_dynamicmaze_v1.yaml
+    overrides:
+      dynamic_walls:
+        shift_mode: high_frequency
+        shift_interval_steps: 350
+    completion_criteria:
+      min_episodes: 3000
+      sentinel_win_rate_threshold: 0.45

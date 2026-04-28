@@ -1,0 +1,52 @@
+config_id: maze_unseen_eval_v1
+maze:
+  layout_split: unseen
+  use_unseen_layout: true
+sentinel:
+  speed: 4.0
+  capture_radius: 1.25
+runner:
+  speed: 4.5
+episode:
+  timeout_seconds: 180.0
+  timeout_counts_as_runner_win: true
+exit:
+  enabled: true
+  require_active_runner: true
+reset:
+  verify_integrity: true
+dynamic_walls:
+  enabled: true
+  shift_interval_seconds: 15.0
+  shift_intensity: 2
+  safe_buffer: 1.75
+  allow_exit_blocking: false
+  wall_lowered_offset: 3.0
+observations:
+  use_rays: true
+  use_memory: true
+  use_buffer_sensors: true
+  include_teammates: false
+  include_opponents: true
+  include_exit_vector: true
+  sentinel_ray_count: 14
+  runner_ray_count: 16
+randomization:
+  seed: 101
+  spawn_positions: true
+  maze_seed: 101
+  exit_positions: true
+  wall_shift_frequency:
+    enabled: true
+    min_seconds: 12.0
+    max_seconds: 24.0
+  speed_asymmetry:
+    enabled: false
+    sentinel_min: 3.8
+    sentinel_max: 4.2
+    runner_min: 4.3
+    runner_max: 4.8
+  timeout:
+    enabled: false
+    min_seconds: 160.0
+    max_seconds: 220.0

@@ -1,0 +1,14 @@
+experiment_family: LB_3v2_seen_unseen_eval_official_v1
+training_matrix_manifest: configs/experiment_manifests/official_curriculum_matrix.yaml
+source_stage_id: stage4
+seeds:
+  - 42
+  - 101
+  - 202
+duration_minutes: 30
+deterministic_inference: true
+splits:
+  - id: seen
+    manifest: configs/experiment_manifests/exp_seen_eval_seed42.yaml
+  - id: unseen
+    manifest: configs/experiment_manifests/exp_unseen_eval_seed101.yaml

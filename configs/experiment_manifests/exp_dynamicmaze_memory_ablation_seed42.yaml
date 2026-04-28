@@ -1,0 +1,14 @@
+run_id: LB_3v2_dynamicmaze_nomemory_seed42_v1
+seed: 42
+scene: 03_DynamicMaze_3v2
+env_config: configs/env_configs/env_dynamicmaze_v1.yaml
+reward_config: configs/reward_configs/reward_trap_aware_v3.yaml
+trainer_config: configs/trainer_configs/ppo_dynamicmaze_3v2.yaml
+curriculum_config: configs/curriculum_configs/curriculum_maze_to_dynamic_v2.yaml
+curriculum_stage: dynamic_maze_low_frequency
+mode: training
+ablation:
+  use_memory: false
+commit_hash: TBD
+artifact_uri: TBD
+notes: Dynamic maze trap-aware PPO run with memory disabled.

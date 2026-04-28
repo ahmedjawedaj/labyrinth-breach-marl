@@ -1,0 +1,12 @@
+run_id: LB_3v2_open_shared_seed42_v1
+seed: 42
+scene: 01_Baseline_OpenArena_3v2
+env_config: configs/env_configs/env_openarena_v1.yaml
+reward_config: configs/reward_configs/reward_shared_basic_v1.yaml
+trainer_config: configs/trainer_configs/ppo_openarena_3v2.yaml
+curriculum_config: configs/curriculum_configs/curriculum_basic_to_maze_v1.yaml
+curriculum_stage: open_arena_fixed_spawn
+mode: training
+commit_hash: TBD
+artifact_uri: TBD
+notes: Baseline open arena shared reward PPO run.

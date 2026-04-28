@@ -1,0 +1,43 @@
+config_id: asymmetry_openarena_memory_off_v1
+sentinel:
+  speed: 4.0
+  capture_radius: 1.25
+runner:
+  speed: 4.5
+episode:
+  timeout_seconds: 120.0
+  timeout_counts_as_runner_win: true
+exit:
+  enabled: true
+  require_active_runner: true
+reset:
+  verify_integrity: true
+observations:
+  use_rays: true
+  use_memory: false
+  use_buffer_sensors: true
+  include_teammates: false
+  include_opponents: true
+  include_exit_vector: true
+  include_opponent_summary: true
+  sentinel_ray_count: 14
+  runner_ray_count: 16
+randomization:
+  seed: 42
+  spawn_positions: false
+  maze_seed: 42
+  exit_positions: false
+  wall_shift_frequency:
+    enabled: false
+    min_seconds: 8.0
+    max_seconds: 18.0
+  speed_asymmetry:
+    enabled: false
+    sentinel_min: 3.8
+    sentinel_max: 4.2
+    runner_min: 4.3
+    runner_max: 4.8
+  timeout:
+    enabled: false
+    min_seconds: 100.0
+    max_seconds: 140.0

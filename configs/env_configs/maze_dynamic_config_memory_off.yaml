@@ -1,0 +1,49 @@
+config_id: maze_dynamic_memory_off_v1
+sentinel:
+  speed: 2.2
+  capture_radius: 1.1
+runner:
+  speed: 2.4
+episode:
+  timeout_seconds: 180.0
+  timeout_counts_as_runner_win: true
+exit:
+  enabled: true
+  require_active_runner: true
+reset:
+  verify_integrity: true
+dynamic_walls:
+  enabled: true
+  shift_interval_seconds: 12.0
+  shift_intensity: 2
+  safe_buffer: 1.75
+  allow_exit_blocking: false
+  wall_lowered_offset: 3.0
+observations:
+  use_rays: true
+  use_memory: false
+  use_buffer_sensors: true
+  include_teammates: false
+  include_opponents: true
+  include_exit_vector: true
+  sentinel_ray_count: 14
+  runner_ray_count: 16
+randomization:
+  seed: 42
+  spawn_positions: true
+  maze_seed: 42
+  exit_positions: true
+  wall_shift_frequency:
+    enabled: false
+    min_seconds: 8.0
+    max_seconds: 18.0
+  speed_asymmetry:
+    enabled: false
+    sentinel_min: 2.0
+    sentinel_max: 2.4
+    runner_min: 2.2
+    runner_max: 2.6
+  timeout:
+    enabled: false
+    min_seconds: 150.0
+    max_seconds: 210.0

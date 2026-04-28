@@ -1,0 +1,166 @@
+# Unity generated files
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Unity generated metadata and crash files
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+sysinfo.txt
+crashlytics-build.properties
+
+# Unity asset store and package exports
+*.unitypackage
+[Aa]ssets/AssetStoreTools*
+
+# Unity build outputs
+*.apk
+*.aab
+*.ipa
+*.exe
+*.app
+*.xcodeproj
+*.xcworkspace
+*.xcarchive
+
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.py[cod]
+*$py.class
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.coverage
+coverage.xml
+htmlcov/
+
+# Python environments and packaging
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+*.egg-info/
+build/
+dist/
+site/
+
+# Conda environments inside the repo
+.conda/
+
+# Jupyter and notebooks
+.ipynb_checkpoints/
+
+# ML-Agents and experiment outputs
+results/
+summaries/
+models/
+checkpoints/
+runs/
+wandb/
+mlruns/
+*.onnx
+*.pt
+*.pth
+*.h5
+*.ckpt
+*.tfevents*
+events.out.tfevents.*
+
+# Project result subfolders are generated artifacts by default.
+# Commit selected paper-ready figures or metrics manually if needed.
+results/metrics/
+results/figures/
+results/tables/
+results/videos/
+
+# Logs
+*.log
+logs/
+Logs/
+
+# Local editor and OS files
+.vscode/
+.idea/
+.vs/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.orig
+
+# Local duplicate/temp artifacts - do not push
+Labyrinth-Breach/
+tmp_logroute_fallback/
+
+# Unity generated/cache folders
+unity/Library/
+unity/Temp/
+unity/Obj/
+unity/Build/
+unity/Builds/
+unity/Logs/
+unity/UserSettings/
+unity/MemoryCaptures/
+
+# Python/cache/env
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# Training/generated heavy artifacts
+results/
+events.out.tfevents*
+*.pt
+*.pth
+*.ckpt
+
+# Unity crash dumps / memory crash artifacts
+unity/mono_crash.mem.*.blob
+*.stackdump
+
+# Runtime/generated local overrides
+configs/runtime_overrides/active_run_context.json
+configs/runtime_overrides/active_curriculum_config.txt
+configs/runtime_overrides/active_rule_config.txt
+configs/runtime_overrides/active_stage.txt
+configs/runtime_overrides/last_unity_log_dir.txt
+configs/runtime_overrides/last_unity_log_dir_fallback.txt

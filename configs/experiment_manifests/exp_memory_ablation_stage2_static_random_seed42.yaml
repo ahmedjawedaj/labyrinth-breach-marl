@@ -1,0 +1,10 @@
+run_id: LB_memory_ablation_seed42_stage2_static_v1
+seed: 42
+scene: 02_StaticMaze_3v2
+env_config: configs/env_configs/env_staticmaze_v1.yaml
+reward_config: configs/reward_configs/reward_dynamicmaze_memory_v4.yaml
+trainer_config: configs/trainer_configs/ppo_staticmaze_3v2.yaml
+curriculum_config: configs/curriculum_configs/curriculum_memory_ablation_on_v1.yaml
+curriculum_stage: ablation_stage2_static_random
+mode: training
+notes: Memory ablation stage 2 static maze with random spawns and exits.

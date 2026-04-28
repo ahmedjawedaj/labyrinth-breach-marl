@@ -1,0 +1,10 @@
+run_id: LB_3v2_curriculum_stage3_seed42_v1
+seed: 42
+scene: 03_DynamicMaze_3v2
+env_config: configs/env_configs/env_dynamicmaze_v1.yaml
+reward_config: configs/reward_configs/reward_dynamicmaze_memory_v4.yaml
+trainer_config: configs/trainer_configs/ppo_dynamicmaze_3v2.yaml
+curriculum_config: configs/curriculum_configs/curriculum_3v2_full_v1.yaml
+curriculum_stage: dynamic_maze_low_frequency
+mode: training
+notes: Curriculum stage 3 - dynamic maze with low-frequency wall shifts.

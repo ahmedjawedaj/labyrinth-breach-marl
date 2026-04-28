@@ -1,0 +1,32 @@
+experiment_family: LB_memory_ablation_official_v1
+seeds:
+  - 42
+  - 101
+  - 202
+duration_minutes: 30
+deterministic_inference: true
+stages:
+  - id: stage1
+    order: 1
+    manifest: configs/experiment_manifests/exp_memory_ablation_stage1_openarena_seed42.yaml
+  - id: stage2
+    order: 2
+    manifest: configs/experiment_manifests/exp_memory_ablation_stage2_static_random_seed42.yaml
+  - id: stage3
+    order: 3
+    manifest: configs/experiment_manifests/exp_memory_ablation_stage3_dynamic_low_seed42.yaml
+  - id: stage4
+    order: 4
+    manifest: configs/experiment_manifests/exp_memory_ablation_stage4_dynamic_high_seed42.yaml
+conditions:
+  - id: memory_on
+    curriculum_config: configs/curriculum_configs/curriculum_memory_ablation_on_v1.yaml
+    seen_rule_config: configs/env_configs/maze_dynamic_config.yaml
+    unseen_rule_config: configs/env_configs/maze_unseen_eval_config.yaml
+  - id: memory_off
+    curriculum_config: configs/curriculum_configs/curriculum_memory_ablation_off_v1.yaml
+    seen_rule_config: configs/env_configs/maze_dynamic_config_memory_off.yaml
+    unseen_rule_config: configs/env_configs/maze_unseen_eval_config_memory_off.yaml
+evaluation:
+  seen_manifest: configs/experiment_manifests/exp_memory_ablation_seen_eval_seed42.yaml
+  unseen_manifest: configs/experiment_manifests/exp_unseen_eval_seed101.yaml

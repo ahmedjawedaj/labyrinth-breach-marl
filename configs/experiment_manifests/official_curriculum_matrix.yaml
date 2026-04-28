@@ -1,0 +1,24 @@
+experiment_family: LB_3v2_curriculum_official_v1
+seeds:
+  - 42
+  - 101
+  - 202
+run_id_template: "LB_3v2_official_seed{seed}_{stage_id}"
+stop_condition_policy: stage-manifest-defined
+stages:
+  - id: stage1
+    order: 1
+    curriculum_stage: static_maze_fixed_spawn_easy
+    manifest: configs/experiment_manifests/exp_curriculum_stage1_static_fixed_seed42.yaml
+  - id: stage2
+    order: 2
+    curriculum_stage: static_maze_random_spawn
+    manifest: configs/experiment_manifests/exp_curriculum_stage2_static_random_seed42.yaml
+  - id: stage3
+    order: 3
+    curriculum_stage: dynamic_maze_low_frequency
+    manifest: configs/experiment_manifests/exp_curriculum_stage3_dynamic_low_seed42.yaml
+  - id: stage4
+    order: 4
+    curriculum_stage: dynamic_maze_high_frequency_tactical
+    manifest: configs/experiment_manifests/exp_curriculum_stage4_dynamic_high_seed42.yaml

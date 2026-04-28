@@ -1,0 +1,69 @@
+# Labyrinth Breach - Dynamic Maze 3v2 PPO baseline.
+#
+# Unity behavior names expected in the scene/prefabs:
+# - Sentinel: shared by the 3 pursuer agents.
+# - Runner: shared by the 2 evader agents.
+#
+# Environment target:
+# - Scene: 03_DynamicMaze_3v2
+# - Agents: 3 Sentinels vs 2 Runners
+# - Maze: seeded maze layout with dynamic wall shifts and exit zones
+# - Rule config: configs/env_configs/maze_dynamic_config.yaml
+# - Reward config: reward_shared_basic_v1 by default; use reward_trap_aware_v3
+#   for trap-aware dynamic maze experiments.
+#
+# Dynamic maze uses a larger model and rollout buffer than Static Maze because
+# wall shifts create non-stationary routes and require longer-horizon adaptation.
+# Wall shift parameters are controlled by maze_dynamic_config.yaml:
+# - shift_interval_seconds: 12.0
+# - shift_intensity: 2
+# - safe_buffer: 1.75
+# - allow_exit_blocking: false
+#
+# Keep only ML-Agents trainer keys below this point. Project-specific
+# metadata is documented in comments so mlagents-learn can parse this file.
+behaviors:
+  Sentinel:
+    trainer_type: ppo
+    hyperparameters:
+      batch_size: 2048
+      buffer_size: 40960
+      learning_rate: 2.5e-4
+      beta: 4.0e-3
+      epsilon: 0.2
+      lambd: 0.95
+      num_epoch: 4
+      learning_rate_schedule: linear
+    network_settings:
+      normalize: true
+      hidden_units: 512
+      num_layers: 3
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    max_steps: 1500000
+    time_horizon: 160
+    summary_freq: 10000
+  Runner:
+    trainer_type: ppo
+    hyperparameters:
+      batch_size: 2048
+      buffer_size: 40960
+      learning_rate: 2.5e-4
+      beta: 4.0e-3
+      epsilon: 0.2
+      lambd: 0.95
+      num_epoch: 4
+      learning_rate_schedule: linear
+    network_settings:
+      normalize: true
+      hidden_units: 512
+      num_layers: 3
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    max_steps: 1000000
+    time_horizon: 160
+    summary_freq: 10000
