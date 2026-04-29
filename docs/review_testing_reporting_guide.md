@@ -49,8 +49,9 @@ This guide provides:
 ### 1.3 Gaps / Updates Needed
 
 1. **Duplicate Unity code trees are diverged**
-   - both `unity/Scripts` and `unity/Assets/Scripts` exist and differ
-   - runtime uses `unity/Assets/Scripts`; keep one source of truth to avoid regressions
+   - the canonical runtime tree is `unity/Assets/Scripts`
+   - legacy mirrors have been isolated under `unity/_deprecated_duplicate_tree/`
+   - keep `unity/Assets/Scripts` as the sole active source of truth to avoid regressions
 
 2. **Automated tests are not yet implemented**
    - currently no substantive Python/Unity unit test suite
@@ -282,4 +283,3 @@ Project is ready for evaluation when all are true:
   - duplicate Unity script tree divergence
   - missing automated test suite
   - README dependency mismatch
-

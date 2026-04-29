@@ -13,7 +13,7 @@ Use these versions for reproducible setup:
 | Python | `3.10.12` |
 | Python ML-Agents | `mlagents==1.1.0` |
 | ML-Agents environment API | `mlagents-envs==1.1.0` |
-| PyTorch | `torch==2.2.1+cpu` |
+| PyTorch | `torch==2.2.1+cu121` |
 | NumPy | `numpy==1.23.5` |
 | Setuptools | `setuptools==70.0.0` |
 
@@ -21,20 +21,52 @@ No HDRP or URP dependency is required at this stage. Use the default render pipe
 
 ## Setup
 
-Install Unity Editor `6000.0.40f1` through Unity Hub. After opening the Unity project, install the ML-Agents Unity package through Package Manager using:
+The recommended setup is the same on Windows, Linux, and macOS:
+
+1. Install Unity Hub.
+2. Install Unity Editor `6000.0.40f1`.
+3. Open the repository root folder with Unity Hub.
+4. In Unity Package Manager, install:
 
 ```text
 com.unity.ml-agents@4.0.0
 ```
 
-Create the Python environment with Conda:
+5. Create the Python environment using Conda or `venv`.
+6. Verify `mlagents-learn` starts correctly.
+
+### Windows
+
+Use PowerShell or Command Prompt for Python setup.
+
+**Conda**
+
+```powershell
+conda env create -f environment.yml
+conda activate labyrinth-breach
+```
+
+**venv**
+
+```powershell
+py -3.10 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+### Linux
+
+Use Bash or Zsh for Python setup.
+
+**Conda**
 
 ```bash
 conda env create -f environment.yml
 conda activate labyrinth-breach
 ```
 
-Or use `venv` and pip:
+**venv**
 
 ```bash
 python3.10 -m venv .venv
@@ -43,7 +75,29 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Verify the Python training CLI:
+### macOS
+
+Use Bash or Zsh for Python setup.
+
+**Conda**
+
+```bash
+conda env create -f environment.yml
+conda activate labyrinth-breach
+```
+
+**venv**
+
+```bash
+python3.10 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+### Verify Python and ML-Agents
+
+Run:
 
 ```bash
 python --version
@@ -51,7 +105,7 @@ python -m pip show mlagents mlagents-envs torch numpy setuptools
 mlagents-learn --help
 ```
 
-The default dependency files install the CPU-only PyTorch wheel. This avoids downloading the multi-gigabyte CUDA dependency stack during initial setup. CUDA can be added later for long training runs if the machine has a compatible GPU and enough disk space.
+The default dependency files install the CUDA 12.1 PyTorch wheel. That is the current project baseline for GPU training. If a machine does not have CUDA-capable hardware, use the `--allow-cpu` path only for intentional smoke tests.
 
 ## Setup Validation
 
