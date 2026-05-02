@@ -1,0 +1,12 @@
+name: labyrinth-breach
+
+# Minimal Conda env — just Python 3.10.12.
+# pip dependencies are installed separately via the setup script.
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.10.12
+  - pip=24.0
