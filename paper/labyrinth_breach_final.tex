@@ -30,8 +30,12 @@ AI641 -- AI for Robotics
 \maketitle
 
 \begin{abstract}
-We present Labyrinth Breach, a configurable Unity ML-Agents environment for asymmetric multi-agent pursuit-evasion in dynamic mazes. Three Sentinel agents cooperatively pursue two Runner agents across procedurally generated layouts with shifting walls, exit zones, and partial observability. Agents observe through vector states, 360-degree raycasts, and last-known-position memory, and are trained with PPO using tactical reward shaping that encourages coordination behaviors such as pincer formations, corridor denial, and exit blocking. We evaluate trained policies across three random seeds on both seen and unseen maze layouts. The results show stable Sentinel win rates (62.0\% seen, 60.3\% unseen) with substantially different capture timing across layout types, suggesting that the learned policies transfer across layouts while remaining sensitive to maze topology. The source code and trained models are publicly available.\footnote{\url{https://github.com/ahmedjawedaj/labyrinth-breach-marl}}
+We present Labyrinth Breach, a configurable Unity ML-Agents environment for asymmetric multi-agent pursuit-evasion in dynamic mazes. Three Sentinel agents cooperatively pursue two Runner agents across procedurally generated layouts with shifting walls, exit zones, and partial observability. Agents observe through vector states, 360-degree raycasts, and last-known-position memory, and are trained with PPO using tactical reward shaping that encourages coordination behaviors such as pincer formations, corridor denial, and exit blocking. We evaluate trained policies across three random seeds on both seen and unseen maze layouts. The results show stable Sentinel win rates (62.0\% seen, 60.3\% unseen) with substantially different capture timing across layout types, suggesting that the learned policies transfer across layouts while remaining sensitive to maze topology. The source code and trained models are publicly available.\footnote{\url{https://github.com/ahmedjawedaj/labyrinth-breach-marl}} A demonstration video of trained agents in the dynamic maze is available online.\footnote{\url{https://drive.google.com/file/d/1uA2Xk7QteroUly8sJsRQaxy1PfJatwN0/view}}
 \end{abstract}
+
+\begin{IEEEkeywords}
+Multi-agent reinforcement learning, pursuit-evasion, dynamic maze, reward shaping, Unity ML-Agents, PPO
+\end{IEEEkeywords}
 
 % ============================================================
 \section{Introduction}
