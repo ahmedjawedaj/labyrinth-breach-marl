@@ -63,7 +63,7 @@ We organize the related work into four themes that directly support different as
 
 \subsection{Pursuit-Evasion as a Multi-Agent Problem}
 
-Direct pursuit-evasion papers share the same capture-versus-escape structure as our task. In harder settings, useful behaviors go beyond direct motion and include route blocking, coordinated pressure, spatial entrapment, and strategic escape timing \cite{verma2019mapel,viper2025,gonultas2024,yan2019uncertain}. Our environment targets exactly these richer behaviors through maze topology and exit-based objectives.
+Direct pursuit-evasion papers share the same capture-versus-escape structure as our task. In harder settings, useful behaviors go beyond direct motion and include route blocking, coordinated pressure, spatial entrapment, and strategic escape timing \cite{verma2019mapel,viper2025,gonultas2024,yan2019uncertain,liu2024uav}. Recent work has also shown that coordinated pursuit strategies can emerge naturally from simple reward signals when the environment contains enough structure \cite{haeri2022emergent}. Our environment targets exactly these richer behaviors through maze topology and exit-based objectives.
 
 \subsection{Cooperative and Mixed MARL}
 
@@ -71,7 +71,7 @@ Multi-agent reinforcement learning faces a non-stationarity challenge because al
 
 \subsection{Credit Assignment}
 
-When multiple agents cooperate under team-level objectives, one agent may contribute by blocking a route or creating pressure while another gets the final capture. Plain shared reward can be too coarse for learning such indirect contributions \cite{rashid2018qmix,wang2020implicit,chen2023explicit}. We address this through tactical reward shaping that provides per-agent bonuses for coordination events such as pincer formations and corridor control.
+When multiple agents cooperate under team-level objectives, one agent may contribute by blocking a route or creating pressure while another gets the final capture. Plain shared reward can be too coarse for learning such indirect contributions \cite{rashid2018qmix,foerster2018coma,wang2020implicit,chen2023explicit}. We address this through tactical reward shaping that provides per-agent bonuses for coordination events such as pincer formations and corridor control.
 
 \subsection{Partial Observability}
 
@@ -136,7 +136,7 @@ Action space & 2 continuous & 2 continuous \\
 
 \subsection{Reward Design}
 
-The reward system goes beyond terminal win/loss signals. It includes survival and capture terms, distance-based shaping for pursuit and evasion, penalties for wall-loop and orbit-stall behavior, exploration bonuses, and an optional tactical layer that rewards coordination events detected by a dedicated \texttt{TrapEventDetector} module.
+The reward system goes beyond terminal win/loss signals. It includes survival and capture terms, distance-based shaping for pursuit and evasion, penalties for wall-loop and orbit-stall behavior, exploration bonuses, and an optional tactical layer that rewards coordination events detected by a dedicated \texttt{TrapEventDetector} module. The design follows the principle that carefully mixed team and individual rewards can improve coordination and learning speed over pure shared reward \cite{li2021teamindividual}.
 
 The tactical shaping layer rewards events such as pincer formations (two Sentinels on opposite sides of a Runner), corridor control (blocking both ends of a corridor), exit denial (guarding an exit while a Runner is nearby), and dead-end forcing (pushing a Runner into a dead end). A cluster penalty discourages Sentinels from bunching together instead of spreading out.
 
@@ -212,7 +212,7 @@ Max steps & 500,000 \\
 
 \subsection{Curriculum}
 
-Training follows a four-stage curriculum. Agents advance to the next stage only after meeting a minimum episode count and a Sentinel win-rate threshold. Table~\ref{tab:curriculum} shows the progression. The first two stages use a static maze layout to build basic pursuit and evasion skills. The final two stages introduce dynamic wall shifts at decreasing intervals, forcing adaptation to changing topology.
+Training follows a four-stage curriculum, motivated by evidence that staged difficulty helps agents discover coordination skills that are hard to learn from sparse reward alone \cite{zhang2023curriculum}. Agents advance to the next stage only after meeting a minimum episode count and a Sentinel win-rate threshold. Table~\ref{tab:curriculum} shows the progression. The first two stages use a static maze layout to build basic pursuit and evasion skills. The final two stages introduce dynamic wall shifts at decreasing intervals, forcing adaptation to changing topology.
 
 \begin{table}[t]
 \centering
@@ -391,6 +391,31 @@ in \textit{Proceedings of Machine Learning Research}, 2025.
 F. Yan, J. Jiang, K. Di, Y. Jiang, and Z. Hao,
 ``Multiagent Pursuit-Evasion Problem with the Pursuers Moving at Uncertain Speeds,''
 \textit{Journal of Intelligent \& Robotic Systems}, vol. 95, no. 1, pp. 119--135, 2019.
+
+\bibitem{foerster2018coma}
+J. Foerster, G. Farquhar, T. Afouras, V. Nardelli, and S. Whiteson,
+``Counterfactual Multi-Agent Policy Gradients,''
+in \textit{Proceedings of the AAAI Conference on Artificial Intelligence}, 2018.
+
+\bibitem{zhang2023curriculum}
+Y. Zhang et al.,
+``Curriculum Learning for Cooperation in Multi-Agent Reinforcement Learning,''
+in \textit{International Conference on Learning Representations (ICLR) Workshop}, 2023.
+
+\bibitem{li2021teamindividual}
+W. Li et al.,
+``Team and Individual Rewards for Cooperative Multi-Agent Reinforcement Learning,''
+arXiv preprint arXiv:2109.10860, 2021.
+
+\bibitem{liu2024uav}
+Y. Liu et al.,
+``Multi-UAV Pursuit-Evasion Gaming Based on PSO-M3DDPG Schemes,''
+\textit{Complex \& Intelligent Systems}, vol. 10, pp. 5221--5239, 2024.
+
+\bibitem{haeri2022emergent}
+H. Haeri, K. Shi, and J. Jeong,
+``Emergent Behaviors in Multi-Agent Target Acquisition,''
+arXiv preprint arXiv:2212.07891, 2022.
 
 \end{thebibliography}
 
