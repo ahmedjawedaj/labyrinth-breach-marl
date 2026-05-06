@@ -276,18 +276,65 @@ Final outcome rates remain comparable between seen and unseen layouts. Sentinel 
 
 Capture timing tells a different story. On unseen layouts, first capture occurs 7.5 seconds earlier on average (9.7s vs 17.2s) and second capture occurs 13.3 seconds earlier (24.5s vs 37.8s). One plausible explanation is that unseen layouts produce more constrained corridor geometry that favors Sentinel pursuit by limiting Runner escape options. This timing difference shows that the evaluation captures meaningful topology effects beyond simple win/loss rates.
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=0.47\textwidth]{ScreenShoots/training progress/Screenshot from 2026-04-28 17-43-36.png}
-    \caption{Training dashboard showing reward curves and logged metrics during PPO training.}
-    \label{fig:training}
-\end{figure}
+Table~\ref{tab:training_episodes} summarizes the training episode outcomes across 1{,}024 logged episodes from the environment reward logs.
+
+\begin{table}[t]
+\centering
+\caption{Training episode outcomes across 1{,}024 episodes.}
+\label{tab:training_episodes}
+\begin{tabular}{lcc}
+\toprule
+Outcome & Count & Fraction \\
+\midrule
+Sentinel win (both captured) & 729 & 71.2\% \\
+Runner win (escape) & 214 & 20.9\% \\
+Timeout (no winner) & 81 & 7.9\% \\
+\midrule
+\textbf{Total episodes} & \textbf{1{,}024} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Reward Curves}
+
+Figure~\ref{fig:reward_curves} shows the per-episode cumulative reward for both teams across all 1{,}024 training episodes. The Sentinel mean reward trends positive (+1.04) while the Runner mean trends negative ($-$1.15), confirming Sentinel dominance. The 50-episode smoothing reveals stable convergence with no reward collapse.
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.47\textwidth]{ScreenShoots/Inference demo/Screenshot from 2026-04-28 17-55-19.png}
-    \caption{Inference-time evaluation of the trained policy in the dynamic maze.}
-    \label{fig:inference}
+    \includegraphics[width=0.48\textwidth]{fig_reward_curves.pdf}
+    \caption{Per-episode cumulative reward for Sentinel (left) and Runner (right) teams. Raw values shown in light colour; 50-episode rolling mean in bold.}
+    \label{fig:reward_curves}
+\end{figure}
+
+Figure~\ref{fig:reward_breakdown} decomposes the total reward into its four components: terminal ($\pm$1.0), shaping ($\sim$1e-3), exploration, and penalties. The terminal reward dominates, confirming that shaping guides but does not override the primary win/loss objective.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.48\textwidth]{fig_reward_breakdown.pdf}
+    \caption{Reward component breakdown over training. Terminal reward dominates; shaping and exploration remain small.}
+    \label{fig:reward_breakdown}
+\end{figure}
+
+\subsection{Win Rate Convergence}
+
+Figure~\ref{fig:win_rate} shows the 100-episode rolling Sentinel win rate. The win rate stabilizes around 70\% after approximately 400 episodes, indicating convergence of the learned policy.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.42\textwidth]{fig_win_rate.pdf}
+    \caption{100-episode rolling Sentinel win rate over training. Convergence around 70\% is reached by episode 400.}
+    \label{fig:win_rate}
+\end{figure}
+
+\subsection{Penalty Reduction as Evidence of Learning}
+
+Figure~\ref{fig:penalty_reduction} tracks the wall-loop penalty (Sentinel) and threat-approach penalty (Runner) over training. The Sentinel wall-loop penalty decreases by 64\% from the first 100 episodes ($-$0.579) to the last 100 ($-$0.207), demonstrating that agents learn to avoid unproductive looping behaviour.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.42\textwidth]{fig_penalty_reduction.pdf}
+    \caption{Penalty reduction over training. Sentinel wall-loop penalty decreases 64\%, showing learned avoidance of unproductive movement patterns.}
+    \label{fig:penalty_reduction}
 \end{figure}
 
 \begin{figure}[t]
@@ -297,12 +344,6 @@ Capture timing tells a different story. On unseen layouts, first capture occurs 
     \label{fig:trapping}
 \end{figure}
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=0.47\textwidth]{ScreenShoots/seen vs unseen results plot/Screenshot from 2026-04-28 18-34-20.png}
-    \caption{Seen vs unseen evaluation comparison across three seeds.}
-    \label{fig:seen_unseen}
-\end{figure}
 
 % ============================================================
 \section{Discussion}

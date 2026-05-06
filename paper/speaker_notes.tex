@@ -1,0 +1,201 @@
+\documentclass[9pt,a4paper]{article}
+\usepackage[left=1cm,right=1cm,top=1cm,bottom=1cm]{geometry}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1.5pt}
+\setlength{\columnsep}{10pt}
+\setlist[itemize]{leftmargin=10pt,itemsep=0pt,parsep=0pt,topsep=1pt}
+
+\titleformat{\section}{\normalsize\bfseries\color{blue!80!black}}{}{0pt}{}[\vspace{-2pt}\hrule\vspace{2pt}]
+\titleformat{\subsection}{\small\bfseries\color{red!70!black}}{}{0pt}{}
+\titlespacing*{\section}{0pt}{5pt}{2pt}
+\titlespacing*{\subsection}{0pt}{3pt}{1pt}
+
+\begin{document}
+\begin{center}
+{\Large\bfseries Slide-by-Slide Speaker Notes \& Anticipated Q\&A} \\[2pt]
+{\small Keep this on your laptop -- do not show on screen}
+\end{center}
+\vspace{-2pt}
+
+\begin{multicols}{2}
+
+% ============================================================
+\section{Slide 3: Architecture Diagram}
+% ============================================================
+
+\subsection{Say this (30 sec)}
+``Everything flows from config files. Observations go into the agent, the agent outputs two continuous actions, the controller checks for captures, the reward engine assigns credit, and the logger records everything to CSV. No hardcoded values anywhere.''
+
+\subsection{Likely questions}
+\textbf{Q: Why is the controller a god-class?} \\
+A: It manages episode lifecycle, capture detection, curriculum advancement, and reward triggering. In Unity ML-Agents, this pattern is standard -- the environment controller orchestrates all agents. We separated rewards and sensing into their own modules to keep it maintainable. \\
+{\scriptsize\color{gray} Open: \texttt{Environment/PursuitEvasionEnvController.cs}}
+
+\textbf{Q: How do agents communicate?} \\
+A: They do not communicate directly. Each agent sees only its own observations. Coordination emerges from shared training (parameter sharing) and tactical reward shaping, not from message passing.
+
+\textbf{Q: Why YAML configs instead of Inspector values?} \\
+A: YAML lets us version-control experiments, diff configurations across runs, and swap reward weights without opening Unity. It also makes the setup reproducible -- anyone can clone the repo and run the same experiment.
+
+% ============================================================
+\section{Slide 4: Agent Hierarchy}
+% ============================================================
+
+\subsection{Say this (20 sec)}
+``BaseAgent handles movement, observation collection, and ML-Agents integration. SentinelAgent adds capture-radius logic. RunnerAgent adds escape state management. All 3 Sentinels share one neural network. Both Runners share another.''
+
+\subsection{Likely questions}
+\textbf{Q: What does parameter sharing actually mean?} \\
+A: Literally the same weights. Sentinel A, B, and C call the same neural network. Each gets different observations because they are at different positions, so they output different actions. It is like 3 employees with the same training manual but looking at different situations.
+
+\textbf{Q: Can agents specialize with parameter sharing?} \\
+A: Not structurally -- they cannot learn ``I am agent A, I should always go left.'' But they can learn role-conditioned behavior: ``if I am closest to the Runner, chase; if I am far, cut off routes.'' The observation determines the behavior, not the agent ID.
+
+\textbf{Q: Why not give each agent its own network?} \\
+A: 3x less data per network update. With 3 Sentinels sharing, every experience from any Sentinel trains the shared brain. This is especially valuable early in training when data is scarce. \\
+{\scriptsize\color{gray} Open: \texttt{Agents/BaseAgent.cs} -- show \texttt{CollectObservations}}
+
+% ============================================================
+\section{Slide 5: Observation Pipeline}
+% ============================================================
+
+\subsection{Say this (30 sec)}
+``117 floats for Sentinels, 129 for Runners. Not pixels -- numbers. Position, velocity, heading, raycasts, memory of last-known target position, and a summary of the 2 nearest opponents. Runners get 2 extra rays because they need 360-degree threat detection.''
+
+\subsection{Likely questions}
+\textbf{Q: Why not use camera observations?} \\
+A: Camera observations require CNNs, are much slower to train, and are harder to interpret. Vector observations train faster, are fully interpretable (we know exactly what each float means), and are standard practice for state-based RL.
+
+\textbf{Q: What is the last-known-position memory?} \\
+A: When a target leaves line-of-sight, we store its last XYZ position and time since disappearance. The agent keeps ``remembering'' where the target was. This decays as time passes. Without it, agents forget targets the moment they go behind a wall. \\
+{\scriptsize\color{gray} Open: \texttt{Sensors/LastKnownPositionMemory.cs}}
+
+\textbf{Q: Why 14 rays for Sentinels vs 16 for Runners?} \\
+A: Runners are prey -- they need wider coverage to detect threats from all directions. Sentinels are predators -- they focus on forward pursuit. More rays = more observation floats = slightly larger input but better spatial awareness.
+
+\textbf{Q: What do the 6 floats per ray mean?} \\
+A: Float 1 = normalized hit distance (0 to 1). Floats 2--6 = one-hot encoding: wall, exit, teammate, opponent, other. So the agent knows what it hit and how far away it is. \\
+{\scriptsize\color{gray} Open: \texttt{Sensors/RaySensorBuilder.cs}}
+
+\textbf{Q: What is the opponent summary?} \\
+A: For the 2 nearest opponents: relative XZ position, distance, LOS flag (can I see them?), and threat pressure (how fast are they approaching?). This gives a structured view of the most dangerous enemies without needing to process all rays. \\
+{\scriptsize\color{gray} Open: \texttt{Sensors/ObservationAssembler.cs} around line 139}
+
+% ============================================================
+\section{Slide 6: Reward Engine}
+% ============================================================
+
+\subsection{Say this (30 sec)}
+``Terminal rewards are $\pm$1.0 for win/loss. Everything else is tiny -- thousandths. This is intentional: shaping rewards guide behavior but the agent always prioritizes winning. All weights come from YAML, so we can tweak without recompiling.''
+
+\subsection{Likely questions}
+\textbf{Q: Why are shaping rewards so small?} \\
+A: If chase progress ($+0.003$/step) were too large, agents might learn to chase forever instead of actually capturing. The small magnitude ensures terminal reward ($\pm1.0$) always dominates the cumulative shaping.
+
+\textbf{Q: How does the TrapEventDetector work?} \\
+A: Every step, it checks geometric conditions: are 2 Sentinels on opposite sides of a Runner (pincer)? Is a Sentinel blocking both ends of a corridor? Is a Sentinel near an exit while a Runner approaches? These are spatial checks on agent positions, not learned behaviors. \\
+{\scriptsize\color{gray} Open: \texttt{Rewards/TrapEventDetector.cs}}
+
+\textbf{Q: Could agents exploit the shaping rewards?} \\
+A: Theoretically yes. An agent could orbit a Runner to farm chase-progress rewards without capturing. We added orbit-stall penalties ($-0.0025$) and wall-loop penalties to counter this. The reward audit CSV logs every reward event so we can check for exploitation.
+
+\textbf{Q: Why separate policies for Sentinels and Runners?} \\
+A: They have different objectives. Sentinels want to capture. Runners want to escape or survive. The reward functions are inverted. Separate policy classes keep the logic clean. \\
+{\scriptsize\color{gray} Open: \texttt{Rewards/SentinelRewardPolicy.cs} vs \texttt{RunnerRewardPolicy.cs}}
+
+% ============================================================
+\section{Slide 7: Training Pipeline}
+% ============================================================
+
+\subsection{Say this (30 sec)}
+``We start easy and get harder. Static maze first, then random spawns, then slow wall shifts, then fast wall shifts. Agents must hit both a minimum episode count and a win-rate threshold before advancing. This is not arbitrary -- we tried training on dynamic mazes directly and it failed.''
+
+\subsection{Likely questions}
+\textbf{Q: What happens if you skip the curriculum?} \\
+A: Agents fail to learn basic pursuit. With walls shifting every 8 seconds from the start, the environment is too non-stationary for agents to discover that chasing leads to reward. The curriculum lets them learn chase $\rightarrow$ generalize $\rightarrow$ adapt.
+
+\textbf{Q: Why these specific thresholds (0.62, 0.55, 0.50, 0.45)?} \\
+A: They decrease because each stage is harder. Stage 1 (static, fixed) is easiest, so we require 62\% before advancing. Stage 4 (dynamic, 8s) is hardest, so 45\% is sufficient. The thresholds were tuned empirically.
+
+\textbf{Q: Why 500K max steps?} \\
+A: Compute budget constraint. Reward curves showed convergence around 300K--400K steps. 500K gives a safety margin. \\
+{\scriptsize\color{gray} Open: \texttt{configs/curriculum\_configs/curriculum\_3v2\_full\_v1.yaml}}
+
+\textbf{Q: What is the time horizon (64)?} \\
+A: How many decision steps the agent collects before sending a batch to PPO for update. Short horizon = faster updates, more bias. Long horizon = slower updates, less bias. 64 is a standard ML-Agents default.
+
+% ============================================================
+\section{Slide 8: Logging \& Results}
+% ============================================================
+
+\subsection{Say this (20 sec)}
+``We log everything: episode outcomes, per-step agent positions, every reward event, and tactical events. Results are averaged across 3 seeds on both seen and unseen layouts. Win rates are stable. Capture timing shifts by 7.5 seconds on unseen mazes.''
+
+\subsection{Likely questions}
+\textbf{Q: Why is capture faster on unseen mazes?} \\
+A: Our hypothesis is that unseen procedural layouts produce more constrained corridors, which limit Runner escape routes. Sentinels catch Runners faster because there are fewer paths to flee. The policy transfers, but it is topology-sensitive.
+
+\textbf{Q: Is 3 seeds enough?} \\
+A: For a course project, yes. Results are consistent across all three (no outlier seed). For a publication, we would use 5--10 seeds with confidence intervals.
+
+\textbf{Q: Why didn't you measure coordination directly?} \\
+A: ``We deliberately chose outcome-level metrics because they are objective and reproducible. We have the step-level logs to compute pincer rate, coverage spread, and corridor-block frequency. We list this as future work because we wanted to report only metrics we can fully defend.'' \\
+{\scriptsize\color{gray}\textbf{HIGH PRIORITY -- asked in another group's viva!}}
+
+% ============================================================
+\section{After Slide 8: Live Demo (no slide -- just do it)}
+% ============================================================
+
+\subsection{Say this}
+``Let me show you the trained agents running in the dynamic maze. No Python is running -- this is pure ONNX inference inside Unity.''
+
+\subsection{During demo, point at}
+\begin{itemize}
+\item Sentinels spreading out (cluster penalty)
+\item Runner heading toward exit (exit reward)
+\item Wall shift happening (dynamic topology)
+\item Capture event (terminal reward trigger)
+\end{itemize}
+
+\subsection{If demo fails}
+``Let me show the pre-recorded video instead.'' Open Google Drive link from the paper footnote.
+
+\subsection{Likely questions during demo}
+\textbf{Q: Why are Sentinels blue and not red?} \\
+A: Legacy material naming. The file is called \texttt{Sentinel\_Red.mat} but the actual color is blue. Same with Runner -- \texttt{Runner\_Blue.mat} is actually pink. We kept the names because Unity uses GUID references. Renaming would break prefab links.
+
+\textbf{Q: Are they actually coordinating or just chasing?} \\
+A: ``Watch this -- two Sentinels approaching from opposite sides. That pattern is consistent with pincer behavior. But we are honest in the paper: we report outcome metrics, not coordination proof. The behavior is suggestive, not conclusive.''
+
+\textbf{Q: What happens when walls shift?} \\
+A: Agents re-plan. They do not get stuck because the observation updates every step with new ray distances. The wall shift changes what the rays hit, which changes the action output.
+
+% ============================================================
+\section{Slide 9: Summary}
+% ============================================================
+
+\subsection{Say this (20 sec)}
+``This is a modular, config-driven, fully-logged system. It is reproducible -- the repo is public, the configs are versioned, the models are included. Our honest limitations: no MA-POCA comparison, no ablation, no coordination metrics. Those are concrete next steps, not vague future work.''
+
+\subsection{Final questions}
+\textbf{Q: What would you do with more time?} \\
+A: Three things. (1) Run MA-POCA and compare with PPO on the same curriculum. (2) Ablation: turn off memory and measure win rate delta. Turn off shaping and measure. (3) Compute coordination metrics from the step logs we already have.
+
+\textbf{Q: What was the hardest part?} \\
+A: Getting the curriculum right. Training directly on dynamic mazes with 8-second wall shifts produced zero learning. We had to step back, train on static mazes first, and gradually increase complexity. That is when we understood why curriculum learning matters -- not from the paper, from the failure.
+
+\textbf{Q: Did you use any LLM tools?} \\
+A: ``We used LLM tools for drafting and code scaffolding. All technical decisions, hyperparameter choices, and experimental results are our own work. The code and trained models are in the public repo.''
+
+\end{multicols}
+\end{document}

@@ -1,0 +1,438 @@
+\documentclass[10pt,landscape,a4paper]{article}
+\usepackage[landscape,left=0.5cm,right=0.5cm,top=0.5cm,bottom=0.5cm]{geometry}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+% Compact spacing
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1.5pt}
+\setlength{\columnsep}{12pt}
+\setlist[itemize]{leftmargin=10pt,itemsep=0pt,parsep=0pt,topsep=1pt}
+\setlist[enumerate]{leftmargin=12pt,itemsep=0pt,parsep=0pt,topsep=1pt}
+
+% Section formatting
+\titleformat{\section}{\normalsize\bfseries\color{blue!80!black}}{}{0pt}{}[\vspace{-2pt}\hrule\vspace{2pt}]
+\titleformat{\subsection}{\small\bfseries\color{red!70!black}}{}{0pt}{}
+\titlespacing*{\section}{0pt}{4pt}{2pt}
+\titlespacing*{\subsection}{0pt}{3pt}{1pt}
+
+\begin{document}
+\begin{center}
+{\Large\bfseries Labyrinth Breach -- Viva Cheatsheet} \\[2pt]
+{\small AI641 -- AI for Robotics | MS AI, LUMS | May 2025}
+\end{center}
+\vspace{-4pt}
+
+\begin{multicols}{3}
+
+% ============================================================
+\section{Project At a Glance}
+% ============================================================
+
+\textbf{What:} 3 Sentinels (pursuers) vs 2 Runners (evaders) in a dynamic maze with shifting walls and exit zones.
+
+\textbf{Framework:} Unity ML-Agents 4.0.0, Unity 6000.0.40f1
+
+\textbf{Algorithm:} PPO with parameter sharing (all 3 Sentinels share one brain, both Runners share another)
+
+\textbf{Formulation:} Partially Observable Stochastic Game (POSG) \\
+$\langle N, \mathcal{S}, \{A_i\}, \{O_i\}, T, \{R_i\}, \gamma \rangle$, $N{=}5$, $\gamma{=}0.99$
+
+\textbf{Win conditions:}
+\begin{itemize}
+\item Sentinels win: capture both Runners before timeout
+\item Runners win: reach exit OR survive 120s (5000 steps)
+\end{itemize}
+
+% ============================================================
+\section{Critical Numbers}
+% ============================================================
+
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Item} & \textbf{Value} \\
+\midrule
+Agents total & 5 (3+2) \\
+Episode timeout & 120s / 5000 steps \\
+Sentinel obs size & 117 floats \\
+Runner obs size & 129 floats \\
+Action space (both) & 2 continuous \\
+Sentinel rays & 14 (84 floats) \\
+Runner rays & 16 (96 floats) \\
+Floats per ray & 6 \\
+Memory floats & 6 \\
+Max training steps & 500,000 \\
+Learning rate & $3 \times 10^{-4}$ \\
+Batch / Buffer & 1024 / 10240 \\
+Hidden units / layers & 256 / 2 \\
+Discount $\gamma$ & 0.99 \\
+GAE $\lambda$ & 0.95 \\
+Clip $\epsilon$ & 0.2 \\
+Entropy $\beta$ & $5 \times 10^{-3}$ \\
+Time horizon & 64 \\
+Epochs per update & 3 \\
+Curriculum stages & 4 \\
+Min total episodes & 9,600 \\
+Eval seeds & 42, 101, 202 \\
+Seen win rate & 62.0\% \\
+Unseen win rate & 60.3\% \\
+1st capture (seen) & 17.2s \\
+1st capture (unseen) & 9.7s \\
+\bottomrule
+\end{tabular}
+
+% ============================================================
+\section{Observation Breakdown}
+% ============================================================
+
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Component & Sent. & Run. \\
+\midrule
+Self state (pos,vel,head,alive) & 10 & 10 \\
+Env context (time,exit,wall) & 7 & 7 \\
+Rays ($N \times 6$) & 84 & 96 \\
+Memory (last-known pos) & 6 & 6 \\
+Opponent summary ($2 \times 5$) & 10 & 10 \\
+\midrule
+\textbf{Total} & \textbf{117} & \textbf{129} \\
+\bottomrule
+\end{tabular}
+
+\vspace{2pt}
+\textbf{Each ray} = 6 floats: normalized distance + one-hot for wall, exit, teammate, opponent, other.
+
+\textbf{Memory} = stores last-known XYZ of target + time since last seen. Activates when LOS breaks.
+
+\textbf{Opponent summary} = 2 nearest opponents: distance, relative XZ, LOS flag, pressure.
+
+\textbf{Why more Runner rays?} Runners must detect threats from all directions. Sentinels focus forward on pursuit targets.
+
+% ============================================================
+\section{Reward Design}
+% ============================================================
+
+\subsection{Sentinel Rewards}
+\begin{tabular}{@{}lr@{}}
+Team capture (win) & $+1.0$ \\
+Timeout/escape (loss) & $-1.0$ \\
+Individual capture & $+0.1$ \\
+Chase progress/step & $+0.003$ \\
+Chase regression & $-0.0025$ \\
+Wall loop penalty & $-0.002$ \\
+Exploration bonus & $+0.0008$ \\
+Orbit stall penalty & $-0.0025$ \\
+\end{tabular}
+
+\subsection{Runner Rewards}
+\begin{tabular}{@{}lr@{}}
+Team exit (win) & $+1.0$ \\
+Both captured (loss) & $-1.0$ \\
+Tagged individually & $-0.2$ \\
+Survival/step & $+0.0005$ \\
+Evade progress & $+0.0025$ \\
+Threat approach & $-0.0035$ \\
+Wall loop penalty & $-0.0015$ \\
+Exploration bonus & $+0.0012$ \\
+Orbit stall penalty & $-0.003$ \\
+\end{tabular}
+
+\subsection{Tactical Layer (Optional)}
+Detected by \texttt{TrapEventDetector}:
+\begin{itemize}
+\item \textbf{Pincer:} 2 Sentinels on opposite sides of Runner
+\item \textbf{Corridor control:} blocking both corridor ends
+\item \textbf{Exit denial:} guarding exit while Runner nearby
+\item \textbf{Dead-end forcing:} pushing Runner into dead end
+\item \textbf{Cluster penalty:} discourages Sentinel bunching
+\end{itemize}
+
+% ============================================================
+\section{Curriculum (4 Stages)}
+% ============================================================
+
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Stage & Ep. & Walls & WR \\
+\midrule
+Static, fixed spawn & 1200 & -- & .62 \\
+Static, rand spawn & 2200 & -- & .55 \\
+Dynamic, low freq & 3200 & 20s & .50 \\
+Dynamic, high freq & 3000 & 8s & .45 \\
+\bottomrule
+\end{tabular}
+
+Agents advance only after hitting min episodes AND win-rate threshold. Total: 9,600+ episodes minimum.
+
+% ============================================================
+\section{PPO -- Know This Cold}
+% ============================================================
+
+\textbf{What:} Policy gradient method by OpenAI. Updates policy in small, controlled steps.
+
+\textbf{Objective:}
+$L^{CLIP} = \mathbb{E}[\min(r_t(\theta)\hat{A}_t, \text{clip}(r_t(\theta), 1{\pm}\epsilon)\hat{A}_t)]$
+
+where $r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$
+
+\textbf{Key ideas:}
+\begin{itemize}
+\item Clips ratio to $[1{-}\epsilon, 1{+}\epsilon]$ so updates are never too large
+\item Uses GAE ($\lambda$) for advantage estimation: balances bias vs variance
+\item Entropy bonus ($\beta$) encourages exploration early, decays over time
+\item Linear LR schedule: starts at $3\times10^{-4}$, decreases to 0
+\end{itemize}
+
+\textbf{Why PPO here?}
+\begin{itemize}
+\item Stable with parameter sharing (3 agents, 1 brain)
+\item Native support in Unity ML-Agents
+\item Yu et al. (MAPPO) showed PPO is surprisingly strong for MARL when tuned carefully
+\end{itemize}
+
+% ============================================================
+\section{MA-POCA vs PPO}
+% ============================================================
+
+\textbf{MA-POCA} = Multi-Agent POsthumous Credit Assignment (Unity).
+
+\begin{tabular}{@{}p{3.5cm}p{3.5cm}@{}}
+\toprule
+\textbf{PPO (ours)} & \textbf{MA-POCA} \\
+\midrule
+Single-agent algo applied to MARL & Built for multi-agent \\
+Shared reward to all & Central critic evaluates each agent \\
+If agent ``dies'' mid-episode, no further credit & ``Posthumous'': dead agents still get credit \\
+Simple, stable & More complex but better credit assignment \\
+\bottomrule
+\end{tabular}
+
+\textbf{If asked ``why not MA-POCA?'':} ``We use PPO as a stable baseline. MA-POCA is configured in our codebase for future comparison to study whether centralized credit assignment produces measurably better coordination.''
+
+% ============================================================
+\section{Key Concepts for Viva}
+% ============================================================
+
+\subsection{POSG (Partially Observable Stochastic Game)}
+Extension of MDP to multiple agents with partial observations. Each agent sees $O_i$, not full state $S$. Non-stationary because other agents change the environment.
+
+\subsection{CTDE (Centralized Training, Decentralized Execution)}
+During training: a central process sees everything and computes gradients. During inference: each agent runs its own policy from local observations only. Used by MADDPG, MA-POCA.
+
+\subsection{Parameter Sharing}
+All agents of same role share one neural network. Sentinel A, B, C use same weights. Advantage: what one learns, all know. Disadvantage: cannot specialize.
+
+\subsection{Reward Shaping}
+Adding intermediate rewards to guide learning when terminal reward is sparse. Risk: agents may exploit shaping rewards instead of pursuing actual objective.
+
+\subsection{Generalization / Transfer}
+Testing on unseen maze layouts. If win rate holds, the policy learned general strategies, not memorized routes.
+
+\subsection{Credit Assignment Problem}
+With team reward, who gets credit? The Sentinel that blocked the corridor or the one that tagged the Runner? QMIX, COMA, MA-POCA all address this.
+
+\subsection{Curriculum Learning}
+Start with easy tasks, gradually increase difficulty. Helps discover behaviors that are hard to learn from scratch in hard environments.
+
+% ============================================================
+\section{Key Papers (What to Say)}
+% ============================================================
+
+\subsection{MADDPG (Lowe 2017)}
+Centralized critic + decentralized actors for mixed cooperative-competitive. ``We use the same CTDE principle but with PPO instead of DDPG.''
+
+\subsection{MAPPO (Yu 2022)}
+PPO is surprisingly effective for cooperative MARL. ``This paper validates our choice of PPO as a strong baseline.''
+
+\subsection{QMIX (Rashid 2018)}
+Value factorization for cooperative teams. ``We chose policy gradient (PPO) over value decomposition because our action space is continuous.''
+
+\subsection{COMA (Foerster 2018)}
+Counterfactual baseline for credit assignment. ``We address credit assignment through reward shaping rather than counterfactual baselines.''
+
+\subsection{ViPER (Wang 2025)}
+Visibility-based pursuit-evasion with RL. ``Our work adds team coordination (3v2) and dynamic topology on top of visibility constraints.''
+
+\subsection{MatrixWorld (Cheng 2023)}
+Grid-based PE benchmark. ``We operate in continuous 3D space with asymmetric teams and exit objectives.''
+
+% ============================================================
+\section{Likely Viva Questions}
+% ============================================================
+
+\textbf{Q: What is the state space size?} \\
+A: 117 floats (Sentinel), 129 floats (Runner). Difference is ray count: 14 vs 16 rays, 6 floats each. \\
+{\scriptsize\color{gray} Show: \texttt{Scripts/Sensors/ObservationAssembler.cs} lines 23--26}
+
+\textbf{Q: Why PPO and not DQN?} \\
+A: DQN is for discrete actions. Our agents output 2 continuous floats (moveX, moveZ). PPO handles continuous action spaces natively. \\
+{\scriptsize\color{gray} Show: \texttt{configs/trainer\_configs/ppo\_openarena\_3v2.yaml}}
+
+\textbf{Q: How do you handle partial observability?} \\
+A: Raycasts (not global state), last-known-position memory for targets out of LOS, opponent summary for 2 nearest enemies. \\
+{\scriptsize\color{gray} Show: \texttt{Sensors/RaySensorBuilder.cs}, \texttt{Sensors/LastKnownPositionMemory.cs}}
+
+\textbf{Q: What proves the agents coordinate?} \\
+A: Outcome-level evidence: stable win rates on unseen layouts. Qualitative: observed pincer/corridor blocking in playback. We acknowledge this is not conclusive proof of intentional coordination.
+
+\textbf{Q: Why do unseen mazes have faster captures?} \\
+A: Likely because unseen layouts have more constrained corridors, limiting Runner escape options. Policies transfer but are sensitive to topology.
+
+\textbf{Q: What is the discount factor and why 0.99?} \\
+A: $\gamma = 0.99$ means the agent values future rewards highly. Important because capture may happen many steps after a good positioning move.
+
+\textbf{Q: What would you do differently?} \\
+A: Run MA-POCA comparison for credit assignment. Add ablation studies (memory on/off, shaping on/off). Compute coordination metrics from step-level logs.
+
+\textbf{Q: How do you prevent reward exploitation?} \\
+A: Reward audit logs track every reward event per agent per step. Orbit stall and wall loop penalties discourage degenerate behavior. \\
+{\scriptsize\color{gray} Show: \texttt{Rewards/RewardEngine.cs}, output: \texttt{results/*/logs/reward\_audit.csv}}
+
+\textbf{Q: What happens when a Runner is captured?} \\
+A: Runner is deactivated. Sentinels must continue pursuing remaining Runner. The reward system gives individual capture bonus but no terminal reward until all are captured. \\
+{\scriptsize\color{gray} Show: \texttt{Environment/PursuitEvasionEnvController.cs} capture logic}
+
+\textbf{Q: What is the role of entropy ($\beta$)?} \\
+A: Entropy bonus encourages the policy to stay stochastic early in training, promoting exploration. Too much entropy = random behavior. Too little = premature convergence.
+
+\textbf{Q: Training vs inference -- what changes?} \\
+A: Observations are identical. During training, Python API collects data and updates weights with exploration. During inference, Unity runs the ONNX model locally with deterministic actions. No Python needed. \\
+{\scriptsize\color{gray} Show: \texttt{unity/Assets/Models/*.onnx}, \texttt{Prefabs/Sentinel.prefab} BehaviorType}
+
+\textbf{Q: What is GAE ($\lambda$)?} \\
+A: Generalized Advantage Estimation. Balances bias (low $\lambda$, like TD) and variance (high $\lambda$, like Monte Carlo). We use $\lambda = 0.95$, favoring lower variance.
+
+\textbf{Q: Why 4 curriculum stages?} \\
+A: Static fixed spawns teach basic pursuit. Random spawns prevent memorization. Low-freq walls introduce adaptation. High-freq walls force real-time replanning. Each stage builds on the last. \\
+{\scriptsize\color{gray} Show: \texttt{configs/curriculum\_configs/curriculum\_3v2\_full\_v1.yaml}}
+
+\vspace{3pt}
+{\color{red!70!black}\textbf{--- HIGH PRIORITY (asked in other group's viva) ---}}
+
+\textbf{Q: Why did you evaluate using win rates and capture times instead of quantifying emergent behavior directly?} \\
+A: ``We deliberately chose outcome-level metrics (win rates, capture timing, escape fractions) because they are objective and reproducible across seeds. We do observe qualitative coordination in playback, such as pincer formations and corridor blocking. However, our logging system (\texttt{replay\_events.csv} and \texttt{reward\_audit.csv}) already records per-step positions and tactical events. From these logs we could compute direct coordination metrics like pincer frequency, corridor-block rate, inter-Sentinel angular spread, and coverage overlap. We list this as future work in the paper because we wanted to report only metrics we can fully defend.''
+
+\textbf{Q: What specific metrics would you use to quantify emergent coordination?} \\
+A: Four concrete metrics from our logs:
+\begin{enumerate}
+\item \textbf{Pincer rate:} fraction of captures where 2+ Sentinels were on opposite sides of the Runner (angle $> 120^{\circ}$)
+\item \textbf{Coverage spread:} average pairwise distance between Sentinels, measuring whether they fan out vs cluster
+\item \textbf{Corridor block rate:} fraction of time a Sentinel occupies both ends of a corridor segment
+\item \textbf{Exit denial rate:} fraction of time at least one Sentinel is within threat radius of an active exit while a Runner is nearby
+\end{enumerate}
+All of these can be computed post-hoc from \texttt{agent\_step\_log.csv} positions. Our \texttt{TrapEventDetector} already detects these events during runtime.
+
+% ============================================================
+\section{File Index -- Open Quickly During Viva}
+% ============================================================
+
+{\scriptsize All paths relative to project root.}
+
+\subsection{C\# Scripts (unity/Assets/Scripts/)}
+\begin{tabular}{@{}p{2.8cm}p{4.8cm}@{}}
+\toprule
+\textbf{Concept} & \textbf{File} \\
+\midrule
+Episode logic, capture, terminals & \texttt{Environment/ PursuitEvasionEnvController.cs} \\
+Base agent (movement, obs) & \texttt{Agents/BaseAgent.cs} \\
+Sentinel agent & \texttt{Agents/SentinelAgent.cs} \\
+Runner agent & \texttt{Agents/RunnerAgent.cs} \\
+Obs vector assembly & \texttt{Sensors/ObservationAssembler.cs} \\
+360 raycasts (14/16 rays) & \texttt{Sensors/RaySensorBuilder.cs} \\
+LOS memory & \texttt{Sensors/LastKnownPositionMemory.cs} \\
+Opponent summary & \texttt{Sensors/ObservationAssembler.cs} L139 \\
+Visibility check & \texttt{Sensors/VisibilityTracker.cs} \\
+Reward engine (all rewards) & \texttt{Rewards/RewardEngine.cs} \\
+Reward config (YAML parse) & \texttt{Rewards/RewardConfig.cs} \\
+Sentinel reward policy & \texttt{Rewards/SentinelRewardPolicy.cs} \\
+Runner reward policy & \texttt{Rewards/RunnerRewardPolicy.cs} \\
+Reward event types & \texttt{Rewards/RewardEvent.cs} \\
+Trap/pincer detection & \texttt{Rewards/TrapEventDetector.cs} \\
+CSV logging (4 files) & \texttt{Logging/StepLogger.cs} \\
+\bottomrule
+\end{tabular}
+
+\subsection{Configs (configs/)}
+\begin{tabular}{@{}p{2.8cm}p{4.8cm}@{}}
+\toprule
+\textbf{Concept} & \textbf{File} \\
+\midrule
+PPO hyperparams & \texttt{trainer\_configs/ ppo\_openarena\_3v2.yaml} \\
+Reward weights & \texttt{reward\_configs/ reward\_shared\_basic\_v1.yaml} \\
+4-stage curriculum & \texttt{curriculum\_configs/ curriculum\_3v2\_full\_v1.yaml} \\
+Unseen eval config & \texttt{env\_configs/ env\_unseen\_eval\_v1.yaml} \\
+\bottomrule
+\end{tabular}
+
+\subsection{Unity Assets (unity/Assets/)}
+\begin{tabular}{@{}p{2.8cm}p{4.8cm}@{}}
+\toprule
+\textbf{Concept} & \textbf{File} \\
+\midrule
+Sentinel ONNX model & \texttt{Models/Sentinel\_seed101\_stage4.onnx} \\
+Runner ONNX model & \texttt{Models/Runner\_seed101\_stage4.onnx} \\
+Sentinel prefab & \texttt{Prefabs/Sentinel.prefab} \\
+Runner prefab & \texttt{Prefabs/Runner.prefab} \\
+Open arena scene & \texttt{Scenes/01\_Baseline\_OpenArena\_3v2} \\
+Static maze scene & \texttt{Scenes/02\_StaticMaze\_3v2} \\
+Dynamic maze scene & \texttt{Scenes/03\_DynamicMaze\_3v2} \\
+Unseen eval scene & \texttt{Scenes/04\_Eval\_UnseenMaze\_3v2} \\
+Sentinel material & \texttt{Materials/Sentinel\_Red.mat} {\tiny(blue!)} \\
+Runner material & \texttt{Materials/Runner\_Blue.mat} {\tiny(pink!)} \\
+\bottomrule
+\end{tabular}
+
+\subsection{Scripts and Outputs}
+\begin{tabular}{@{}p{2.8cm}p{4.8cm}@{}}
+\toprule
+\textbf{Concept} & \textbf{File} \\
+\midrule
+Eval/inference script & \texttt{scripts/evaluate\_policy.py} \\
+Setup validation & \texttt{scripts/setup\_validation.py} \\
+Episode outcomes & \texttt{results/*/logs/episode\_log.csv} \\
+Per-step positions & \texttt{results/*/logs/agent\_step\_log.csv} \\
+Reward audit trail & \texttt{results/*/logs/reward\_audit.csv} \\
+Replay events & \texttt{results/*/logs/replay\_events.csv} \\
+Coordination metrics & \texttt{results/*/kpis/coordination\_metrics.csv} \\
+\bottomrule
+\end{tabular}
+
+\subsection{Data Flow (memorize this)}
+\texttt{YAML config} $\rightarrow$ \texttt{RewardConfig} struct $\rightarrow$ Policy class $\rightarrow$ \texttt{RewardEngine} $\rightarrow$ per-agent \texttt{AddReward()} $\rightarrow$ \texttt{StepLogger} $\rightarrow$ CSV files
+
+\vspace{2pt}
+{\small\textbf{Material name trap:} Sentinel\_Red.mat is \textbf{blue}. Runner\_Blue.mat is \textbf{pink}. Legacy names, do not rename (GUID references).}
+
+% ============================================================
+\section{Results Summary}
+% ============================================================
+
+\begin{tabular}{@{}lcc@{}}
+\toprule
+Metric & Seen & Unseen \\
+\midrule
+Sentinel win rate & 0.620 & 0.603 \\
+Runner win rate & 0.380 & 0.397 \\
+1st capture (s) & 17.15 & 9.68 \\
+2nd capture (s) & 37.84 & 24.55 \\
+Runner escape frac & 0.260 & 0.268 \\
+Timeout survival & 0.120 & 0.129 \\
+\bottomrule
+\end{tabular}
+
+\textbf{Key takeaway:} Win rates are stable (1.7pt drop). Capture timing shifts significantly ($-$7.5s first, $-$13.3s second). Policies transfer but are topology-sensitive.
+
+\textbf{Safe claim:} ``The learned policies transfer across maze layouts while remaining sensitive to topology.''
+
+\textbf{Unsafe claim (avoid):} ``The agents have learned spatial reasoning'' or ``The agents intentionally coordinate.''
+
+\end{multicols}
+\end{document}

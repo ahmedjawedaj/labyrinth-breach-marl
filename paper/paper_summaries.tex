@@ -1,0 +1,335 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[left=1.5cm,right=1.5cm,top=1.5cm,bottom=1.5cm]{geometry}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{helvet}
+\usepackage{hyperref}
+\renewcommand{\familydefault}{\sfdefault}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2pt}
+\setlist[itemize]{leftmargin=12pt,itemsep=0pt,parsep=0pt,topsep=1pt}
+\setlist[enumerate]{leftmargin=14pt,itemsep=0pt,parsep=0pt,topsep=1pt}
+
+\titleformat{\section}{\large\bfseries\color{blue!80!black}}{}{0pt}{}[\vspace{-2pt}\hrule\vspace{3pt}]
+\titleformat{\subsection}{\normalsize\bfseries\color{red!70!black}}{}{0pt}{}
+\titlespacing*{\section}{0pt}{8pt}{4pt}
+\titlespacing*{\subsection}{0pt}{4pt}{2pt}
+
+\begin{document}
+\begin{center}
+{\LARGE\bfseries Paper Summaries \& Viva Q\&A} \\[3pt]
+{\normalsize Labyrinth Breach -- AI641 | 6 Must-Know Papers}
+\end{center}
+
+\begin{multicols}{2}
+
+% ============================================================
+\section{1. PPO (Schulman et al., 2017)}
+% ============================================================
+
+\textbf{Title:} Proximal Policy Optimization Algorithms \\
+\textbf{Link:} \url{https://arxiv.org/abs/1707.06347}
+
+\subsection{Problem}
+Policy gradient methods like TRPO are effective but complex (require conjugate gradient, line search). Need a simpler method that still prevents destructively large policy updates.
+
+\subsection{Key Idea}
+Instead of a hard trust-region constraint (TRPO), PPO uses a \textbf{clipped surrogate objective} that automatically limits how much the policy can change per update.
+
+\subsection{Core Equation}
+\[
+L^{CLIP} = \mathbb{E}\left[\min\left(r_t(\theta)\hat{A}_t,\; \text{clip}(r_t(\theta), 1{-}\epsilon, 1{+}\epsilon)\hat{A}_t\right)\right]
+\]
+where $r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$ is the probability ratio.
+
+\textbf{What this means:}
+\begin{itemize}
+\item If $r_t > 1{+}\epsilon$: policy moved too far in the ``good'' direction $\rightarrow$ clipped, no extra gradient
+\item If $r_t < 1{-}\epsilon$: policy moved too far in the ``bad'' direction $\rightarrow$ clipped
+\item The $\min$ ensures we take the more pessimistic (conservative) estimate
+\end{itemize}
+
+\subsection{Other Components}
+\begin{itemize}
+\item \textbf{GAE ($\lambda$):} Generalized Advantage Estimation. Blends TD (low variance, high bias) with Monte Carlo (high variance, low bias). $\lambda = 0.95$ favors lower variance.
+\[
+\hat{A}_t = \sum_{l=0}^{\infty} (\gamma\lambda)^l \delta_{t+l}, \quad \delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)
+\]
+\item \textbf{Entropy bonus ($\beta$):} Added to loss to encourage exploration. Prevents premature convergence to deterministic policy.
+\item \textbf{Value function loss:} Trains the critic $V(s)$ alongside the policy.
+\item \textbf{Total loss:} $L = L^{CLIP} - c_1 L^{VF} + c_2 H[\pi]$
+\end{itemize}
+
+\subsection{Connection to Labyrinth Breach}
+\begin{itemize}
+\item We use PPO as our training algorithm with $\epsilon = 0.2$, $\lambda = 0.95$, $\beta = 0.005$
+\item Parameter sharing: all 3 Sentinels share one PPO brain, both Runners share another
+\item Continuous action space (2 floats: moveX, moveZ) -- PPO handles this natively
+\item Unity ML-Agents implements PPO with linear LR decay and configurable entropy
+\end{itemize}
+
+\subsection{Viva Q\&A}
+
+\textbf{Q: What does clipping do in PPO?} \\
+A: It prevents the policy from changing too much in one update. If the ratio $r_t$ goes outside $[1{-}\epsilon, 1{+}\epsilon]$, the gradient is zeroed out. This gives stability similar to TRPO but is much simpler to implement.
+
+\textbf{Q: What is the advantage function?} \\
+A: It measures how much better an action is compared to the average. $A(s,a) = Q(s,a) - V(s)$. Positive advantage means the action was better than expected, negative means worse.
+
+\textbf{Q: What happens if $\epsilon$ is too large?} \\
+A: Large $\epsilon$ allows bigger policy updates per step. This can cause training instability because the policy may jump to a bad region and never recover. Typical value is 0.1--0.3.
+
+\textbf{Q: What happens if $\epsilon$ is too small?} \\
+A: Learning becomes very slow because each update barely changes the policy. It would take many more iterations to converge.
+
+\textbf{Q: Why $\gamma = 0.99$ and not 0.9?} \\
+A: A capture event may happen 50--100 steps after a good positioning move. With $\gamma = 0.9$, reward from 50 steps ahead is discounted to $0.9^{50} = 0.005$ (almost zero). With $\gamma = 0.99$, it is $0.99^{50} = 0.605$ (still meaningful). So 0.99 lets the agent learn from delayed outcomes.
+
+\textbf{Q: What is the difference between PPO and TRPO?} \\
+A: TRPO uses a hard KL-divergence constraint (requires second-order optimization). PPO approximates this with a simple clip. PPO is easier to implement, parallelizes better, and works comparably well.
+
+% ============================================================
+\section{2. MADDPG (Lowe et al., 2017)}
+% ============================================================
+
+\textbf{Title:} Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments \\
+\textbf{Link:} \url{https://papers.nips.cc/paper/7217}
+
+\subsection{Problem}
+Independent learning in multi-agent settings is unstable because each agent's environment is non-stationary (other agents are changing). Q-learning fails because the Markov property breaks.
+
+\subsection{Key Idea: CTDE}
+\textbf{Centralized Training, Decentralized Execution:}
+\begin{itemize}
+\item \textbf{Training:} Each agent has its own critic that sees \textit{all} agents' observations and actions: $Q_i(x, a_1, \ldots, a_N)$
+\item \textbf{Execution:} Each agent uses only its own actor $\pi_i(o_i)$ with local observations
+\item This solves non-stationarity because the critic can model other agents' behavior
+\end{itemize}
+
+\subsection{Method}
+\begin{itemize}
+\item Extension of DDPG (Deep Deterministic Policy Gradient) to multi-agent
+\item Each agent $i$ has: actor $\mu_i(o_i)$, critic $Q_i(x, a_1, \ldots, a_N)$
+\item Critic gradient: $\nabla_{\theta_i} J = \mathbb{E}[\nabla_{\theta_i}\mu_i \cdot \nabla_{a_i} Q_i]$
+\item Uses experience replay and target networks (like DQN)
+\end{itemize}
+
+\subsection{Connection to Labyrinth Breach}
+\begin{itemize}
+\item We use the CTDE \textit{principle} but not the MADDPG \textit{algorithm}
+\item Our PPO + parameter sharing is a simpler form: shared weights serve as implicit centralization
+\item MADDPG uses deterministic policies; we use stochastic (PPO outputs a distribution)
+\item MADDPG requires one critic per agent; our approach uses one shared value function per team
+\end{itemize}
+
+\subsection{Viva Q\&A}
+
+\textbf{Q: Why didn't you use MADDPG?} \\
+A: MADDPG requires one separate critic per agent and uses off-policy replay buffers. PPO with parameter sharing is simpler, on-policy, and natively supported by Unity ML-Agents. MAPPO (Yu 2022) showed PPO matches or beats MADDPG in cooperative settings.
+
+\textbf{Q: How is CTDE different from parameter sharing?} \\
+A: In CTDE, each agent has its own network but the critic sees global state during training. In parameter sharing, all same-role agents literally share one network. Parameter sharing is more restrictive (agents cannot specialize) but more sample-efficient (3x more data per network update).
+
+\textbf{Q: What is non-stationarity in MARL?} \\
+A: From one agent's perspective, the environment keeps changing because other agents are updating their policies. This violates the Markov assumption. Solutions: centralized critic (MADDPG), shared network (our approach), or communication.
+
+% ============================================================
+\section{3. MAPPO (Yu et al., 2022)}
+% ============================================================
+
+\textbf{Title:} The Surprising Effectiveness of PPO in Cooperative Multi-Agent Games \\
+\textbf{Link:} \url{https://proceedings.neurips.cc/paper_files/paper/2022/hash/9c1535a02f0ce079433344e14d910597-Abstract-Conference.html}
+
+\subsection{Problem}
+Complex MARL algorithms (QMIX, MADDPG, MAPPO variants) are assumed necessary for cooperative tasks. Is simple PPO actually competitive when implemented carefully?
+
+\subsection{Key Finding}
+\textbf{Yes.} With proper engineering choices, PPO matches or beats specialized MARL algorithms on SMAC, MPE, and Hanabi benchmarks.
+
+\subsection{Critical Implementation Tricks}
+\begin{enumerate}
+\item \textbf{Value normalization:} Normalize returns by running mean/std
+\item \textbf{Input normalization:} Normalize observations
+\item \textbf{Orthogonal initialization:} Initialize network weights with orthogonal matrices
+\item \textbf{Gradient clipping:} Clip gradient norms to 10
+\item \textbf{Large batch sizes:} Use large buffers relative to environment complexity
+\item \textbf{Proper entropy tuning:} Start with enough entropy, let it decay
+\item \textbf{Death masking:} Handle terminated agents properly
+\end{enumerate}
+
+\subsection{Connection to Labyrinth Breach}
+\begin{itemize}
+\item Directly validates our choice: ``PPO is not a weak baseline, it is a strong one''
+\item Our hyperparameters follow MAPPO recommendations: large buffer (10240), batch 1024, 3 epochs, LR $3 \times 10^{-4}$
+\item We add parameter sharing (all Sentinels share weights), which MAPPO also evaluates
+\item Our entropy $\beta = 0.005$ follows their guidance on exploration
+\end{itemize}
+
+\subsection{Viva Q\&A}
+
+\textbf{Q: What makes your PPO implementation ``careful''?} \\
+A: We follow MAPPO's recipe: proper batch/buffer ratio (1024/10240), linear LR decay, entropy bonus 0.005, 3 epochs per update, gradient clipping, and 256-unit 2-layer network. These are not arbitrary -- they come from MAPPO's ablation study.
+
+\textbf{Q: Doesn't parameter sharing prevent agent specialization?} \\
+A: Yes, but each agent still receives different observations (different positions, ray hits). The shared network learns a \textit{role-conditioned} policy: given the current observation, what should a Sentinel do? Agents behave differently because they see different things, not because they have different weights.
+
+\textbf{Q: How does MAPPO differ from independent PPO?} \\
+A: MAPPO can use a centralized value function (critic sees global state). Independent PPO uses only local observations for both actor and critic. We use a variant closer to independent PPO with parameter sharing.
+
+% ============================================================
+\section{4. QMIX (Rashid et al., 2018)}
+% ============================================================
+
+\textbf{Title:} QMIX: Monotonic Value Function Factorisation for Deep Multi-Agent RL \\
+\textbf{Link:} \url{https://arxiv.org/abs/1803.11485}
+
+\subsection{Problem}
+In cooperative MARL, how do you learn a joint team value function $Q_{tot}$ that decomposes into per-agent values $Q_i$ while still allowing decentralized execution?
+
+\subsection{Key Idea: Monotonic Mixing}
+\begin{itemize}
+\item Each agent $i$ learns its own $Q_i(o_i, a_i)$ using only local observations
+\item A \textbf{mixing network} combines them: $Q_{tot} = f(Q_1, Q_2, \ldots, Q_N)$
+\item \textbf{Monotonicity constraint:} $\frac{\partial Q_{tot}}{\partial Q_i} \geq 0$ for all $i$
+\item This ensures: $\arg\max_{a_i} Q_i = \arg\max_{a_i} Q_{tot}$ (decentralized argmax = joint argmax)
+\item Mixing network weights are produced by hypernetworks conditioned on global state
+\end{itemize}
+
+\subsection{Why Monotonicity?}
+If $Q_{tot}$ increases whenever any $Q_i$ increases, then each agent can independently pick its best action and the team action is guaranteed to be jointly optimal. No coordination needed at execution time.
+
+\subsection{Connection to Labyrinth Breach}
+\begin{itemize}
+\item QMIX is for \textbf{discrete} actions (argmax over Q-values). Our agents use \textbf{continuous} actions (2D movement). QMIX cannot directly apply.
+\item QMIX uses value decomposition; we use policy gradient (PPO). Different paradigm.
+\item Both address the same goal: team coordination under shared reward
+\item QMIX's credit assignment is implicit (through mixing weights). Ours is explicit (reward shaping per agent).
+\end{itemize}
+
+\subsection{Viva Q\&A}
+
+\textbf{Q: Why PPO instead of QMIX?} \\
+A: QMIX requires discrete action spaces (it does argmax over Q-values). Our agents output 2 continuous floats for 2D movement. PPO naturally handles continuous actions by outputting a Gaussian distribution. Converting to discrete would lose movement precision.
+
+\textbf{Q: What is value decomposition?} \\
+A: Breaking the team's joint value $Q_{tot}(s, a_1, \ldots, a_N)$ into per-agent values $Q_i(o_i, a_i)$. The challenge is ensuring the decomposition is consistent: agents picking locally optimal actions should also be globally optimal.
+
+\textbf{Q: What is the limitation of QMIX's monotonicity?} \\
+A: It cannot represent non-monotonic interactions. Example: if agent A's action is good only when agent B does a specific action. QTRAN and QPLEX address this, but at higher complexity.
+
+% ============================================================
+\section{5. COMA (Foerster et al., 2018)}
+% ============================================================
+
+\textbf{Title:} Counterfactual Multi-Agent Policy Gradients \\
+\textbf{Link:} \url{https://ojs.aaai.org/index.php/AAAI/article/view/11794}
+
+\subsection{Problem}
+In cooperative MARL with shared team reward, how does each agent know whether \textit{its specific action} helped or hurt? This is the \textbf{credit assignment problem}.
+
+\subsection{Key Idea: Counterfactual Baseline}
+\begin{itemize}
+\item Standard baseline: $V(s)$ (average value of the state)
+\item COMA baseline: ``What reward would the team get if I had taken a \textit{different} action while everyone else did the same thing?''
+\item Advantage for agent $i$:
+\[
+A_i(s, a_i) = Q(s, \mathbf{a}) - \sum_{a'_i} \pi_i(a'_i | o_i) \cdot Q(s, (a'_i, \mathbf{a}_{-i}))
+\]
+\item This marginalizes over agent $i$'s actions while keeping others fixed
+\item Uses a centralized critic that can compute $Q$ for any action combination
+\end{itemize}
+
+\subsection{Why It Matters}
+Consider: Sentinel A blocked a corridor. Sentinel B tagged the Runner. Both get $+1.0$ team reward. But who ``deserves'' the credit? COMA would ask: ``If Sentinel A had NOT blocked, would the capture still happen?'' If not, Sentinel A gets high advantage.
+
+\subsection{Connection to Labyrinth Breach}
+\begin{itemize}
+\item We do NOT use COMA. We use reward shaping instead.
+\item Our approach: directly reward coordination events (pincer = $+$bonus, corridor block = $+$bonus) via \texttt{TrapEventDetector}
+\item \textbf{Tradeoff:} COMA is principled but requires a centralized critic and discrete actions. Our shaping is manual but works with continuous actions and PPO.
+\item Future work: compare PPO+shaping vs MA-POCA (Unity's credit assignment method)
+\end{itemize}
+
+\subsection{Viva Q\&A}
+
+\textbf{Q: How do you handle credit assignment?} \\
+A: We use tactical reward shaping instead of counterfactual methods. Our \texttt{TrapEventDetector} detects coordination events (pincer formations, corridor blocks, exit denial) and gives individual bonuses to the contributing agents. This is more manual than COMA but compatible with our continuous-action PPO setup.
+
+\textbf{Q: What is the advantage of COMA over reward shaping?} \\
+A: COMA automatically determines who contributed. Reward shaping requires us to manually define what counts as a contribution. COMA is more general, but requires discrete actions and a centralized critic that can evaluate counterfactual action combinations.
+
+\textbf{Q: What is MA-POCA and how does it relate to COMA?} \\
+A: MA-POCA (Unity ML-Agents) uses a centralized critic like COMA but adds ``posthumous'' credit -- agents that are removed mid-episode (e.g., captured Runners) still receive gradient updates. We plan to compare PPO vs MA-POCA in future work.
+
+% ============================================================
+\section{6. ViPER (Wang et al., 2025)}
+% ============================================================
+
+\textbf{Title:} ViPER: Visibility-based Pursuit-Evasion via Reinforcement Learning \\
+\textbf{Link:} \url{https://proceedings.mlr.press/v270/wang25k.html}
+
+\subsection{Problem}
+Standard pursuit-evasion assumes full observability. Real robots have limited sensing. How do you train pursuit policies when agents can only see what is in their line of sight?
+
+\subsection{Key Idea}
+\begin{itemize}
+\item Formulates PE as a visibility-constrained problem: pursuers must \textit{find} targets, not just chase them
+\item Uses structured observations based on visibility polygons and search frontiers
+\item Trains team pursuit policies with RL that learn to coordinate search patterns
+\item Evaluates on maps with occlusion, walls, and limited field of view
+\end{itemize}
+
+\subsection{What They Do That We Also Do}
+\begin{itemize}
+\item Line-of-sight constraints (agents cannot see through walls)
+\item Memory of last-known positions when targets leave FOV
+\item Coordinated pursuit requiring spatial awareness
+\item Evaluation on maps with varying complexity
+\end{itemize}
+
+\subsection{What We Add Beyond ViPER}
+\begin{itemize}
+\item \textbf{Asymmetric teams:} 3v2 (ViPER typically uses equal numbers)
+\item \textbf{Dynamic topology:} Walls shift during episodes (ViPER uses static maps)
+\item \textbf{Exit objectives:} Runners can win by reaching exits (not just survival)
+\item \textbf{Tactical reward shaping:} Explicit coordination bonuses
+\item \textbf{Curriculum:} 4-stage difficulty progression
+\end{itemize}
+
+\subsection{Viva Q\&A}
+
+\textbf{Q: How does your work differ from ViPER?} \\
+A: ViPER focuses on visibility-based search in static environments with equal team sizes. We add three complexity dimensions: dynamic wall shifts that change maze topology during play, asymmetric 3v2 team structure, and exit-based Runner objectives that create a richer strategic space beyond pure survival. We also use a 4-stage curriculum and tactical reward shaping for coordination.
+
+\textbf{Q: Why not use visibility polygons like ViPER?} \\
+A: ViPER operates in 2D with exact visibility polygon computation. We operate in 3D Unity with physics-based raycasting, which naturally gives approximate visibility. Our 14/16 ray approach is computationally cheaper and integrates directly with Unity ML-Agents.
+
+\textbf{Q: What is the closest existing work to your project?} \\
+A: ViPER for visibility-constrained pursuit, and MatrixWorld for the benchmark platform idea. Our contribution is combining dynamic topology, asymmetric teams, exit objectives, and tactical reward shaping into one integrated environment.
+
+% ============================================================
+\section{Quick Cross-Reference: Paper $\leftrightarrow$ Our Design}
+% ============================================================
+
+\begin{tabular}{@{}p{2cm}p{5.5cm}@{}}
+\toprule
+\textbf{Paper} & \textbf{What we took / why we differ} \\
+\midrule
+PPO & Our training algorithm. Clipped objective, GAE, entropy bonus. \\
+MADDPG & CTDE principle. We use parameter sharing instead of per-agent critics. \\
+MAPPO & Validates PPO for MARL. Our hyperparameters follow their recipe. \\
+QMIX & Shows value decomposition approach. We use policy gradient because our actions are continuous. \\
+COMA & Credit assignment via counterfactual. We use reward shaping via TrapEventDetector instead. \\
+ViPER & Closest PE paper. We add dynamic walls, 3v2, exits, curriculum. \\
+\bottomrule
+\end{tabular}
+
+\end{multicols}
+\end{document}
