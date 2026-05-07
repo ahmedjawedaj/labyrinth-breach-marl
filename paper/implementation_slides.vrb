@@ -1,0 +1,57 @@
+\frametitle{Reward Engine -- How We Shape Behavior}
+\begin{columns}[T]
+\column{0.48\textwidth}
+\textbf{Sentinel Rewards}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Event & Weight \\
+\midrule
+Team capture (win) & $+1.0$ \\
+Timeout/escape (loss) & $-1.0$ \\
+Individual capture & $+0.1$ \\
+Chase progress & $+0.003$ \\
+Chase regression & $-0.0025$ \\
+Wall loop penalty & $-0.002$ \\
+Exploration bonus & $+0.0008$ \\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+\textbf{Runner Rewards}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Event & Weight \\
+\midrule
+Team exit (win) & $+1.0$ \\
+Both captured (loss) & $-1.0$ \\
+Survival/step & $+0.0005$ \\
+Evade progress & $+0.0025$ \\
+Threat approach & $-0.0035$ \\
+\bottomrule
+\end{tabular}
+
+\column{0.52\textwidth}
+\textbf{Data Flow}
+\begin{lstlisting}[language=bash]
+YAML config
+  -> RewardConfig.cs (parse)
+    -> SentinelRewardPolicy.cs
+    -> RunnerRewardPolicy.cs
+      -> RewardEngine.cs (apply)
+        -> agent.AddReward(value)
+        -> StepLogger (audit CSV)
+\end{lstlisting}
+
+\vspace{4pt}
+\textbf{Tactical Layer (TrapEventDetector)}
+\begin{itemize}
+\item Pincer: 2 Sentinels on opposite sides
+\item Corridor control: both ends blocked
+\item Exit denial: guarding exit
+\item Dead-end forcing
+\item Cluster penalty (anti-bunching)
+\end{itemize}
+
+\vspace{4pt}
+\textbf{Key principle:} All weights loaded from YAML at runtime. Zero code changes to experiment.
+\end{columns}
