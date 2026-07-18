@@ -50,6 +50,10 @@ claimed complete.
 
 Available result families:
 
+- Revised 14-page PDF report with current pause-state results:
+  `paper/labyrinth_breach_revised_publication_report.pdf`
+- Journal source for the revised report:
+  `paper/labyrinth_breach_journal.tex`
 - Canonical assist-off evaluation:
   `results/publication_eval_official/aggregate/publication_eval_summary.csv`
 - Action-assist paired ablation:

@@ -455,6 +455,153 @@ The machine-readable suite pre-registers signs under the convention \emph{canoni
 The memory intervention is a system-level ablation rather than a neural-input-only mask. It writes zeros into the fixed six-dimensional memory observation, stops last-known-target updates, and prevents the pursuit-assist controller from falling back to a remembered target when no opponent is visible. This preserves observation dimensionality and network compatibility, but any measured effect must be attributed to the complete explicit-memory subsystem.
 
 % ============================================================
+\section{Current Official Evidence at Pause}
+% ============================================================
+
+\noindent\textbf{Pause status.} The strengthened campaign was intentionally
+paused on 2026-07-18 after completing the official curriculum baseline, the
+canonical assist-off evaluation, and two deployment-time paired ablations. The
+strict campaign tracker reported 47/65 training runs and 90/180 target-complete
+evaluation cells. The publication-readiness audit passed 14/16 gates. The two
+remaining blockers were official evaluation completeness for unfinished
+ablation families and paired ablation completeness: only two of five planned
+paired analyses were complete. Consequently, this section reports the
+completed evidence honestly and does not claim completion of the full journal
+experiment matrix.
+
+The official five-seed curriculum baseline reached 20/20 audited training
+runs. Figure~\ref{fig:official_training_reward} summarizes the exported
+TensorBoard reward traces for the five independent policy seeds. The curve
+export contains 28,320 scalar rows and is generated from
+\texttt{results/official\_summary/training\_curves/}. It is an audited
+learning-curve artifact, not a stopping criterion: all official stages use
+fixed trainer step budgets.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.48\textwidth]{fig_official_training_reward.pdf}
+    \caption{Audited five-seed official curriculum reward curves exported from
+    TensorBoard scalars. The official gate uses fixed trainer step budgets; the
+    plotted curves are diagnostic summaries of completed training.}
+    \label{fig:official_training_reward}
+\end{figure}
+
+Figure~\ref{fig:official_training_elo} reports the corresponding self-play ELO
+traces. ELO is useful for detecting cycling and relative opponent difficulty,
+but it is not treated as a game-theoretic equilibrium certificate.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.48\textwidth]{fig_official_training_elo.pdf}
+    \caption{Audited five-seed self-play ELO traces. Stable or increasing ELO
+    does not imply Nash convergence; it is used as a training diagnostic.}
+    \label{fig:official_training_elo}
+\end{figure}
+
+\subsection{Canonical Assist-Off Evaluation}
+
+The canonical evaluation uses the five trained curriculum policy seeds
+$(42,101,202,606,707)$, one seen topology, five held-out topologies, and a
+target of 100 completed episodes per policy-topology cell. This yields 30
+completed cells and 3,002 episodes because two cells slightly exceeded the
+target before shutdown. Every reported row comes from the canonical evaluation
+aggregate and passed the strict publication-evaluation audit.
+
+\begin{table}[t]
+\centering
+\caption{Canonical assist-off evaluation over five policy seeds. Values are
+means over policy-topology cells; the second number is the across-cell standard
+deviation.}
+\label{tab:official_eval_pause}
+\footnotesize
+\begin{tabular}{lcc}
+\toprule
+Metric & Seen & Five held-out topologies \\
+\midrule
+Cells / episodes & 5 / 501 & 25 / 2,501 \\
+Sentinel win rate & 41.5\% $\pm$ 5.0 & 42.2\% $\pm$ 8.0 \\
+Runner win rate & 58.5\% $\pm$ 5.0 & 57.8\% $\pm$ 8.0 \\
+Escape rate & 52.9\% $\pm$ 7.4 & 53.5\% $\pm$ 9.5 \\
+Full capture time & 23.70 $\pm$ 4.55 s & 22.79 $\pm$ 3.96 s \\
+Pincer episode rate & 22.6\% $\pm$ 4.1 & 20.3\% $\pm$ 4.5 \\
+Corridor block rate & 4.0\% $\pm$ 1.8 & 2.5\% $\pm$ 1.8 \\
+Exit denial rate & 42.7\% $\pm$ 2.9 & 39.2\% $\pm$ 4.6 \\
+Trap success rate & 49.4\% $\pm$ 4.2 & 50.4\% $\pm$ 8.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:official_eval_pause} changes the interpretation of the earlier
+legacy story. Under canonical assist-off evaluation, the task is not
+Sentinel-dominated. Runner wins are more common than Sentinel wins on both the
+seen and held-out splits, and escapes account for roughly half of all episodes.
+This is evidence of a playable asymmetric benchmark with meaningful evasion,
+not evidence that the pursuer policy has solved the task. The held-out split is
+not materially worse than the seen split at this aggregate level, but the
+policy-seed variation is substantial: mean Sentinel win rate across the six
+layouts ranges from 31.6\% for seed 101 to 50.8\% for seed 606. This is why the
+paper reports per-seed results and avoids a robust-generalization claim.
+
+\subsection{Completed Paired Ablations}
+
+Two paired deployment-time interventions were complete at pause: action-assist
+on/off and dynamic-wall on/off. The convention is canonical full condition
+minus ablated condition. Thus, for \emph{action assist on}, a negative Sentinel
+win delta means the canonical assist-off policy won less often than the
+assist-on hybrid controller. For \emph{dynamic wall off}, a positive tactical
+event delta means the dynamic-wall condition produced more of that event than
+the static-wall intervention.
+
+\begin{table}[t]
+\centering
+\caption{Completed paired ablations on held-out topologies at pause. Deltas use
+the full-minus-condition convention and are paired by policy seed and topology.}
+\label{tab:completed_ablations_pause}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrr}
+\toprule
+Ablation / metric & Delta & $d_z$ & Boot. low & Boot. high \\
+\midrule
+Assist on: Sentinel win & -1.26 pp & -0.17 & -6.88 pp & 4.44 pp \\
+Assist on: escape & 1.82 pp & 0.25 & -3.64 pp & 7.38 pp \\
+Assist on: Sentinel spread & -0.153 m & -0.48 & -0.290 & -0.011 \\
+Assist on: pincer rate & 0.91 pp & 0.16 & -2.09 pp & 4.50 pp \\
+\midrule
+Wall off: Sentinel win & 2.06 pp & 0.29 & -2.74 pp & 7.22 pp \\
+Wall off: pincer rate & 2.75 pp & 0.63 & 1.08 pp & 4.52 pp \\
+Wall off: exit denial & 2.34 pp & 0.45 & 0.20 pp & 4.58 pp \\
+Wall off: stall fraction & -6.46 pp & -1.21 & -8.77 pp & -3.77 pp \\
+Wall off: trap episode rate & 3.16 pp & 0.76 & 1.08 pp & 5.40 pp \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The completed action-assist intervention does not show a reliable win-rate
+benefit under the paired held-out analysis: the bootstrap interval spans zero.
+It does, however, change some spatial behavior; canonical assist-off runs show
+lower Sentinel spread under the full-minus-assist-on convention. This supports
+disclosing assist settings but does not justify claiming that geometric
+assistance is necessary for success.
+
+The dynamic-wall intervention has clearer tactical effects. With dynamic walls
+enabled, pincer episodes, exit denial, and trap episodes are higher on held-out
+topologies, and stall-step fraction is lower. The Sentinel win-rate delta still
+spans zero, so the defensible claim is behavioral: dynamic topology changes the
+coordination-event profile more clearly than it changes terminal win rate in
+the completed sample.
+
+\subsection{Unfinished Evidence}
+
+Three registered ablation families were not complete at pause: memory-off,
+tactical-reward-off, and direct-dynamic training. Memory-off and tactical
+reward ablations are retraining ablations, so they cannot be inferred from the
+canonical checkpoints. Direct-dynamic is also a retraining condition and has the
+largest remaining step budget. These incomplete gates are why the present PDF
+should be used for advisor review or a workshop/preprint direction, not as a
+final journal submission package.
+
+% ============================================================
 \section{Legacy Evidence Audit (Excluded from Official Results)}
 % ============================================================
 
