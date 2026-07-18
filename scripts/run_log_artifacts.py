@@ -95,6 +95,7 @@ def collect_run_log_artifacts(
     results_dir: str,
     *,
     strict: bool,
+    allow_fallback_copy: bool = True,
 ) -> LogSyncResult:
     logs_dir = (root / results_dir / run_id / "logs").resolve()
     logs_dir.mkdir(parents=True, exist_ok=True)
@@ -102,6 +103,8 @@ def collect_run_log_artifacts(
     copied: list[str] = []
     missing = [name for name in REQUIRED_LOG_ARTIFACTS if not (logs_dir / name).exists()]
     candidates = _candidate_dirs(root, logs_dir)
+    if not allow_fallback_copy:
+        candidates = [candidate for candidate in candidates if candidate.resolve() == logs_dir.resolve()]
 
     if missing:
         for source_dir in candidates:
@@ -124,6 +127,8 @@ def collect_run_log_artifacts(
         candidates_checked=tuple(str(path) for path in candidates),
     )
     if strict:
+        if "seed_unknown" in logs_dir.parts:
+            raise RuntimeError(f"Strict run logs cannot be routed to seed_unknown: {logs_dir}")
         problems = validate_artifacts(required_raw_log_requirements(logs_dir))
         if not problems:
             return result

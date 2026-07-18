@@ -356,19 +356,7 @@ public static class CurriculumConfigLoader
             return configPath;
         }
 
-        string projectRootPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", configPath));
-        if (File.Exists(projectRootPath))
-        {
-            return projectRootPath;
-        }
-
-        string repoRootPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", configPath));
-        if (File.Exists(repoRootPath))
-        {
-            return repoRootPath;
-        }
-
-        return projectRootPath;
+        return LabyrinthPathResolver.ResolvePath(configPath);
     }
 
     private static string StripComment(string line)

@@ -128,6 +128,10 @@ Desktop.ini
 # Local duplicate/temp artifacts - do not push
 Labyrinth-Breach/
 tmp_logroute_fallback/
+tmp/
+output/
+outputs/
+worker_status/
 
 # Unity generated/cache folders
 unity/Library/
@@ -162,5 +166,6 @@ configs/runtime_overrides/active_run_context.json
 configs/runtime_overrides/active_curriculum_config.txt
 configs/runtime_overrides/active_rule_config.txt
 configs/runtime_overrides/active_stage.txt
+configs/runtime_overrides/active_reward_config.txt
 configs/runtime_overrides/last_unity_log_dir.txt
 configs/runtime_overrides/last_unity_log_dir_fallback.txt

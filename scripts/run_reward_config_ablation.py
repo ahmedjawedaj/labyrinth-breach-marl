@@ -150,11 +150,11 @@ def main() -> int:
                 "unseen_sentinel_win_rate": metric(split_kpis["unseen"], "sentinel_win_rate"),
                 "seen_first_capture_time": metric(split_kpis["seen"], "mean_time_to_first_capture_seconds"),
                 "unseen_full_capture_time": metric(split_kpis["unseen"], "mean_time_to_full_capture_seconds"),
-                "seen_exploration_time": metric(split_kpis["seen"], "dynamic_route_change_proxy", "value"),
+                "seen_route_change_degrees": metric(split_kpis["seen"], "dynamic_route_change_proxy", "mean_abs_heading_change_degrees"),
                 "unseen_survival_time": metric(split_kpis["unseen"], "runner_survival_time_seconds_mean"),
-                "seen_pincer_rate": metric(split_kpis["seen"], "coordination", "pincer_rate"),
-                "seen_corridor_rate": metric(split_kpis["seen"], "coordination", "corridor_block_rate"),
-                "seen_exit_denial_rate": metric(split_kpis["seen"], "coordination", "exit_denial_rate"),
+                "seen_pincer_episode_rate": metric(split_kpis["seen"], "coordination", "pincer_episode_rate"),
+                "seen_corridor_episode_rate": metric(split_kpis["seen"], "coordination", "corridor_block_episode_rate"),
+                "seen_exit_denial_episode_rate": metric(split_kpis["seen"], "coordination", "exit_denial_episode_rate"),
                 "seen_path_efficiency_ratio": metric(split_kpis["seen"], "path_efficiency", "shortest_path_vs_actual_ratio_proxy"),
             }
             comparison_rows.append(row)

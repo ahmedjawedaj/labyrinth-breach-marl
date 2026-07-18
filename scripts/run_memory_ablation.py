@@ -273,14 +273,14 @@ def main() -> int:
                 - metric_from_summary(off_summary, ["seen", "kpi", "mean_time_to_first_capture_seconds"]),
                 "unseen_mean_time_to_full_capture": metric_from_summary(on_summary, ["unseen", "kpi", "mean_time_to_full_capture_seconds"])
                 - metric_from_summary(off_summary, ["unseen", "kpi", "mean_time_to_full_capture_seconds"]),
-                "seen_exploration_time_proxy": metric_from_summary(on_summary, ["seen", "kpi", "dynamic_route_change_proxy", "value"])
-                - metric_from_summary(off_summary, ["seen", "kpi", "dynamic_route_change_proxy", "value"]),
+                "seen_route_change_degrees": metric_from_summary(on_summary, ["seen", "kpi", "dynamic_route_change_proxy", "mean_abs_heading_change_degrees"])
+                - metric_from_summary(off_summary, ["seen", "kpi", "dynamic_route_change_proxy", "mean_abs_heading_change_degrees"]),
                 "unseen_runner_survival_time": metric_from_summary(on_summary, ["unseen", "kpi", "runner_survival_time_seconds_mean"])
                 - metric_from_summary(off_summary, ["unseen", "kpi", "runner_survival_time_seconds_mean"]),
                 "seen_path_efficiency_ratio_proxy": metric_from_summary(on_summary, ["seen", "kpi", "path_efficiency", "shortest_path_vs_actual_ratio_proxy"])
                 - metric_from_summary(off_summary, ["seen", "kpi", "path_efficiency", "shortest_path_vs_actual_ratio_proxy"]),
-                "unseen_pincer_rate": metric_from_summary(on_summary, ["unseen", "kpi", "coordination", "pincer_rate"])
-                - metric_from_summary(off_summary, ["unseen", "kpi", "coordination", "pincer_rate"]),
+                "unseen_pincer_episode_rate": metric_from_summary(on_summary, ["unseen", "kpi", "coordination", "pincer_episode_rate"])
+                - metric_from_summary(off_summary, ["unseen", "kpi", "coordination", "pincer_episode_rate"]),
                 "seen_runner_terminal_reward_mean": metric_from_summary(
                     on_summary,
                     ["seen", "reward_breakdown", "Runner", "terminal_reward_mean"],
@@ -301,10 +301,10 @@ def main() -> int:
                 ("unseen_sentinel_win_rate", metric_from_summary(on_summary, ["unseen", "kpi", "sentinel_win_rate"]), metric_from_summary(off_summary, ["unseen", "kpi", "sentinel_win_rate"])),
                 ("seen_capture_time_first", metric_from_summary(on_summary, ["seen", "kpi", "mean_time_to_first_capture_seconds"]), metric_from_summary(off_summary, ["seen", "kpi", "mean_time_to_first_capture_seconds"])),
                 ("unseen_capture_time_full", metric_from_summary(on_summary, ["unseen", "kpi", "mean_time_to_full_capture_seconds"]), metric_from_summary(off_summary, ["unseen", "kpi", "mean_time_to_full_capture_seconds"])),
-                ("seen_exploration_time_proxy", metric_from_summary(on_summary, ["seen", "kpi", "dynamic_route_change_proxy", "value"]), metric_from_summary(off_summary, ["seen", "kpi", "dynamic_route_change_proxy", "value"])),
+                ("seen_route_change_degrees", metric_from_summary(on_summary, ["seen", "kpi", "dynamic_route_change_proxy", "mean_abs_heading_change_degrees"]), metric_from_summary(off_summary, ["seen", "kpi", "dynamic_route_change_proxy", "mean_abs_heading_change_degrees"])),
                 ("unseen_survival_time_runner", metric_from_summary(on_summary, ["unseen", "kpi", "runner_survival_time_seconds_mean"]), metric_from_summary(off_summary, ["unseen", "kpi", "runner_survival_time_seconds_mean"])),
                 ("seen_path_efficiency_ratio_proxy", metric_from_summary(on_summary, ["seen", "kpi", "path_efficiency", "shortest_path_vs_actual_ratio_proxy"]), metric_from_summary(off_summary, ["seen", "kpi", "path_efficiency", "shortest_path_vs_actual_ratio_proxy"])),
-                ("unseen_coordination_pincer_rate", metric_from_summary(on_summary, ["unseen", "kpi", "coordination", "pincer_rate"]), metric_from_summary(off_summary, ["unseen", "kpi", "coordination", "pincer_rate"])),
+                ("unseen_pincer_episode_rate", metric_from_summary(on_summary, ["unseen", "kpi", "coordination", "pincer_episode_rate"]), metric_from_summary(off_summary, ["unseen", "kpi", "coordination", "pincer_episode_rate"])),
                 ("seen_runner_terminal_reward_mean", metric_from_summary(on_summary, ["seen", "reward_breakdown", "Runner", "terminal_reward_mean"]), metric_from_summary(off_summary, ["seen", "reward_breakdown", "Runner", "terminal_reward_mean"])),
             ]
             for metric, on_value, off_value in rows:

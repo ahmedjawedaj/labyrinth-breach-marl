@@ -1,5 +1,11 @@
 # Retraining and Results Report
 
+> **Archived attempt.** This report records the pre-standalone failure state and
+> is not the current publication status. The macOS standalone, corrected
+> training budgets, expanded held-out matrix, and current blockers are documented
+> in `docs/publication_upgrade_status.md`, `docs/current_empirical_truth.md`, and
+> `results/official_summary/publication_readiness.md`.
+
 ## 1. Executive Summary
 
 - Scope executed: full pre-training implementation audit, full 3-seed/4-stage training pipeline launch attempt, evaluation launch prerequisites, artifact/KPI validation, and summary export generation.

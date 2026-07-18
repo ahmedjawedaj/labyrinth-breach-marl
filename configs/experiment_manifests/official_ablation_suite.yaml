@@ -1,0 +1,69 @@
+suite_id: LB_3v2_publication_ablation_suite_v1
+effect_convention: canonical_full_minus_condition
+seeds:
+- 42
+- 101
+- 202
+- 606
+- 707
+evaluation_topologies:
+- 42
+- 101
+- 202
+- 303
+- 404
+- 505
+conditions:
+- id: memory_off
+  type: retrain
+  training_matrix: configs/experiment_manifests/official_memory_off_aligned_matrix.yaml
+  evaluation_matrix: configs/experiment_manifests/official_memory_off_eval_matrix.yaml
+  directional_hypotheses:
+  - metric: sentinel_target_reacquisition_seconds
+    group: unseen
+    expected_sign: negative
+    rationale: explicit memory should shorten completed team-level visibility gaps
+- id: tactical_reward_off
+  type: retrain
+  training_matrix: configs/experiment_manifests/official_tactical_off_aligned_matrix.yaml
+  evaluation_matrix: configs/experiment_manifests/official_tactical_reward_off_eval_matrix.yaml
+  directional_hypotheses:
+  - metric: pincer_episode_rate
+    group: unseen
+    expected_sign: positive
+  - metric: corridor_block_episode_rate
+    group: unseen
+    expected_sign: positive
+  - metric: exit_denial_episode_rate
+    group: unseen
+    expected_sign: positive
+  - metric: trap_episode_rate
+    group: unseen
+    expected_sign: positive
+- id: direct_dynamic_training
+  type: retrain
+  training_matrix: configs/experiment_manifests/official_direct_dynamic_matrix.yaml
+  evaluation_matrix: configs/experiment_manifests/official_direct_dynamic_training_eval_matrix.yaml
+  directional_hypotheses:
+  - metric: absolute_generalization_gap_sentinel_win
+    group: seen_vs_unseen
+    expected_sign: negative
+    rationale: curriculum policies are expected to reduce the seen-to-held-out transfer gap
+- id: action_assist_on
+  type: evaluation_intervention
+  evaluation_matrix: configs/experiment_manifests/official_action_assist_on_eval_matrix.yaml
+  directional_hypotheses:
+  - metric: sentinel_win
+    group: unseen
+    expected_sign: negative
+    rationale: the canonical assist-off rate is expected to be lower than assist-on
+- id: dynamic_wall_off
+  type: evaluation_intervention
+  evaluation_matrix: configs/experiment_manifests/official_dynamic_wall_off_eval_matrix.yaml
+  directional_hypotheses:
+  - metric: route_change_degrees
+    group: unseen
+    expected_sign: positive
+  - metric: route_change_rate_ge_45
+    group: unseen
+    expected_sign: positive

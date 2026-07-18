@@ -22,6 +22,8 @@ public struct EnvRuleConfig
     public float WallSafeBuffer;
     public bool AllowExitBlocking;
     public float WallLoweredOffset;
+    public float SentinelPursuitAssistStrength;
+    public float RunnerEvadeAssistStrength;
     public RandomizationConfig RandomizationConfig;
 
     public static EnvRuleConfig Default()
@@ -44,6 +46,8 @@ public struct EnvRuleConfig
             WallSafeBuffer = 1.5f,
             AllowExitBlocking = false,
             WallLoweredOffset = 3f,
+            SentinelPursuitAssistStrength = 0.15f,
+            RunnerEvadeAssistStrength = 0f,
             RandomizationConfig = RandomizationConfig.Default()
         };
     }
@@ -165,6 +169,14 @@ public static class EnvRuleConfigLoader
             values,
             "dynamic_walls.wall_lowered_offset",
             config.WallLoweredOffset);
+        config.SentinelPursuitAssistStrength = GetFloat(
+            values,
+            "action_assist.sentinel_pursuit_strength",
+            config.SentinelPursuitAssistStrength);
+        config.RunnerEvadeAssistStrength = GetFloat(
+            values,
+            "action_assist.runner_evade_strength",
+            config.RunnerEvadeAssistStrength);
         ObservationConfig observationConfig = config.ObservationConfig;
         observationConfig.UseRays = GetBool(values, "observations.use_rays", observationConfig.UseRays);
         observationConfig.UseMemory = GetBool(values, "observations.use_memory", observationConfig.UseMemory);
@@ -271,19 +283,7 @@ public static class EnvRuleConfigLoader
             return configPath;
         }
 
-        string projectRootPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", configPath));
-        if (File.Exists(projectRootPath))
-        {
-            return projectRootPath;
-        }
-
-        string repoRootPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", configPath));
-        if (File.Exists(repoRootPath))
-        {
-            return repoRootPath;
-        }
-
-        return projectRootPath;
+        return LabyrinthPathResolver.ResolvePath(configPath);
     }
 
     private static Dictionary<string, string> ParseYamlLikeFile(string path)

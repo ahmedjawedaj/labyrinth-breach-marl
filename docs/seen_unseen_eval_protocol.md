@@ -1,49 +1,52 @@
-# Seen vs Unseen Evaluation Protocol (Official)
+# Seen and Held-Out Evaluation Protocol (Official)
 
-This project now has an explicit official seen/unseen evaluation protocol:
+The publication protocol is registered in:
 
-- `configs/experiment_manifests/official_seen_unseen_eval_matrix.yaml`
+- `configs/experiment_manifests/official_publication_eval_matrix.yaml`
 
-## Definitions
+The older `official_seen_unseen_eval_matrix.yaml` is retained only for historical
+compatibility. It is not sufficient for publication because it contains one
+unseen configuration and uses a wall-clock duration as the sampling unit.
 
-- **Seen environment**: layout distribution used during training-style dynamic maze configuration.
-  - Manifest: `configs/experiment_manifests/exp_seen_eval_seed42.yaml`
-  - Scene/config path: dynamic maze evaluation on trained layout family.
-- **Unseen environment**: held-out layout distribution not used in training maps.
-  - Manifest: `configs/experiment_manifests/exp_unseen_eval_seed101.yaml`
-  - Scene/config path: unseen maze evaluation.
+## Experimental cells
 
-## Deterministic, seed-aligned evaluation
+Each independently trained policy seed (`42`, `101`, `202`, `606`, `707`) is
+evaluated on:
 
-For each official seed (`42`, `101`, `202`), the pipeline runs both:
+- one seen training-family topology (`seen_seed42`); and
+- five generated held-out topologies (`unseen_seed101`, `202`, `303`, `404`,
+  and `505`).
 
-- `seen`
-- `unseen`
-
-using the same:
-
-- evaluation duration (`duration_minutes` in eval matrix manifest)
-- deterministic inference setting (`deterministic_inference`)
-- inference mode (`--resume --inference`)
+Every policy-topology cell must produce 100 completed episodes. The 30-minute
+limit is a failure timeout, not an evaluation budget. Inference is deterministic,
+while placement/event seeds vary by episode and the topology seed remains fixed
+within a cell.
 
 ## Execution
 
 ```bash
-python scripts/run_seen_unseen_eval_matrix.py --no-graphics
+python scripts/run_publication_eval_matrix.py \
+  --results-dir results/publication_eval_official \
+  --target-episodes 100 \
+  --no-graphics \
+  --resume-completed
 ```
+
+Evaluation starts only after the source Stage 4 training run reports success.
+The launcher validates seen/held-out controls before execution and the final
+audit enforces episode schema, source checkpoint, scene, rule config, reward
+config, topology seed, layout ID, required artifacts, and completed-episode
+count.
 
 ## Result layout
 
-- Per seed:
-  - `results/seed_<seed>/eval/<eval_run_id>/...`
-  - `results/seed_<seed>/eval/meta_evaluation.json`
-  - `results/seed_<seed>/eval/seen_unseen_comparison.json`
-  - `results/seed_<seed>/eval/seen_unseen_comparison.csv`
-- Family aggregate:
-  - `results/LB_3v2_seen_unseen_eval_official_v1/eval/final_seen_unseen_summary.json`
-  - `results/LB_3v2_seen_unseen_eval_official_v1/eval/final_seen_unseen_summary.csv`
-- Completion tracking:
-  - `results/<training_experiment_family>/completion/seed_completion_report.json`
-  - `results/<training_experiment_family>/completion/seed_completion_report.csv`
+- Per policy seed and topology:
+  `results/publication_eval_official/policy_seed_<seed>/<eval_run_id>/`
+- Aggregate tables and audit:
+  `results/publication_eval_official/aggregate/`
+- Strict training-plus-evaluation tracker:
+  `results/LB_3v2_curriculum_official_v1/completion/`
 
-The completion tracker fails if any required metadata/artifact is missing.
+Run `python scripts/seed_completion_tracker.py` for the 20 training stages and
+30 evaluation cells. It exits nonzero until every required artifact is complete
+and hash-valid.

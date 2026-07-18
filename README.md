@@ -5,7 +5,7 @@
 > AI641 -- AI for Robotics | MS AI, LUMS
 
 [![Demo Video](https://img.shields.io/badge/Demo-Video-red?logo=googledrive)](https://drive.google.com/file/d/1uA2Xk7QteroUly8sJsRQaxy1PfJatwN0/view)
-[![Paper](https://img.shields.io/badge/Paper-LaTeX-blue)](/paper/labyrinth_breach_final.tex)
+[![Paper](https://img.shields.io/badge/Paper-IEEE%20Draft-blue)](/paper/labyrinth_breach_journal.tex)
 
 ## Overview
 
@@ -13,15 +13,23 @@ Labyrinth Breach is a Unity ML-Agents environment for asymmetric multi-agent pur
 
 Agents are trained with **PPO** using tactical reward shaping that encourages coordination behaviors such as pincer formations, corridor denial, and exit blocking. Trained policies are evaluated across multiple random seeds on both seen and unseen maze layouts.
 
-### Key Results
+### Evidence Status
 
 | Metric | Seen | Unseen |
 | --- | --- | --- |
-| Sentinel win rate | 0.620 | 0.603 |
-| Time to first capture (s) | 17.15 | 9.68 |
-| Time to second capture (s) | 37.84 | 24.55 |
+| Completed episodes | 12 | 106 |
+| Sentinel win rate | 75.0% | 68.9% |
+| Sentinel 95% Wilson interval | 46.8%-91.1% | 59.5%-76.9% |
+| Escape rate | 0.0% | 25.5% |
+| Mean full-capture time (s) | 13.33 | 21.04 |
 
-Policies transfer to unseen layouts with only a 1.7 percentage point drop in win rate while capture timing shifts substantially, indicating topology-sensitive rather than memorized behavior.
+These values are an audited diagnostic of one legacy checkpoint pair, not a
+publication-grade generalization result. The old unseen seeds reused one
+hard-coded topology, and the legacy seen/unseen rules also changed movement and
+wall parameters. The official replacement protocol uses five independently
+trained policy seeds, five genuinely distinct held-out topologies, matched
+non-topology controls, and 100 completed episodes per policy-topology cell. See
+[`docs/current_empirical_truth.md`](docs/current_empirical_truth.md).
 
 ## Project Structure
 
@@ -59,12 +67,15 @@ labyrinth-breach-marl/
 
 ## Training Curriculum
 
-| Stage | Min Episodes | Wall Shift | Win Rate Threshold |
-| --- | --- | --- | --- |
-| Static maze, fixed spawns | 1,200 | None | >= 0.62 |
-| Static maze, random spawns | 2,200 | None | >= 0.55 |
-| Dynamic maze, low frequency | 3,200 | 20s | >= 0.50 |
-| Dynamic maze, high frequency | 3,000 | 8s | >= 0.45 |
+| Stage | Sentinel Steps | Runner Steps | Wall Shift |
+| --- | ---: | ---: | --- |
+| Static maze, fixed spawns | 1,500,000 | 1,500,000 | None |
+| Static maze, random spawns | 1,500,000 | 1,500,000 | None |
+| Dynamic maze, low frequency | 1,500,000 | 1,500,000 | 20s, intensity 1 |
+| Dynamic maze, high frequency | 1,500,000 | 1,500,000 | 8s, intensity 3 |
+
+Episode and win-rate thresholds in the curriculum YAML are post-training audit
+targets; ML-Agents termination is controlled by the trainer step budgets above.
 
 ## Required Versions
 
@@ -107,10 +118,16 @@ Open any scene in the Unity Editor (e.g., `03_DynamicMaze_3v2`) and press Play. 
 ## Training
 
 ```bash
-mlagents-learn configs/trainer_configs/ppo_openarena_3v2.yaml --run-id=baseline_run
+python scripts/run_multiseed_curriculum.py \
+  --resume-completed \
+  --env builds/macos/LabyrinthBreach.app \
+  --allow-cpu \
+  --no-graphics
 ```
 
-Then press Play in the Unity Editor to begin training.
+The launcher transfers both role checkpoints between stages, preserves raw
+logs and configuration snapshots, generates KPIs, and fails runs that do not
+pass the strict training audit.
 
 ## Authors
 

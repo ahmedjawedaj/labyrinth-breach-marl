@@ -4,12 +4,16 @@
 from __future__ import annotations
 
 import argparse
+import atexit
 import json
 import os
 import shlex
+import shutil
 import socket
 import subprocess
 import sys
+import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -72,11 +76,14 @@ def cuda_available() -> bool:
     return bool(torch.cuda.is_available())
 
 
-def ensure_eval_preflight() -> None:
+def ensure_eval_preflight(base_port: int = 5004) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.settimeout(0.25)
-        if sock.connect_ex(("127.0.0.1", 5004)) == 0:
-            raise RuntimeError("Preflight failed: port 5004 is already in use.")
+        if sock.connect_ex(("127.0.0.1", base_port)) == 0:
+            raise RuntimeError(f"Preflight failed: port {base_port} is already in use.")
+
+    if base_port != 5004:
+        return
 
     current_pid = str(os.getpid())
     proc_list = subprocess.run(
@@ -136,7 +143,34 @@ def require_existing(paths: list[Path], label: str) -> None:
         raise FileNotFoundError(f"Missing {label}:\n  {joined}")
 
 
-def build_evaluation_command(args: argparse.Namespace, root: Path) -> list[str]:
+def prepare_inference_workspace(
+    root: Path,
+    source_results_dir: Path,
+    source_run_id: str,
+    behaviors: list[str],
+    eval_run_id: str,
+) -> Path:
+    """Stage fixed checkpoints away from the immutable training result tree."""
+    workspace_parent = root / "tmp" / "evaluation_inference"
+    workspace_parent.mkdir(parents=True, exist_ok=True)
+    workspace = Path(tempfile.mkdtemp(prefix=f"{eval_run_id}_", dir=workspace_parent))
+    try:
+        for behavior in behaviors:
+            source = source_results_dir / source_run_id / behavior / "checkpoint.pt"
+            target = workspace / source_run_id / behavior / "checkpoint.pt"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+    except Exception:
+        shutil.rmtree(workspace, ignore_errors=True)
+        raise
+    return workspace
+
+
+def build_evaluation_command(
+    args: argparse.Namespace,
+    root: Path,
+    inference_results_dir: Path | None = None,
+) -> list[str]:
     trainer_config = manifest_value(args, "trainer_config")
     seed = manifest_value(args, "seed")
     torch_device = resolve_torch_device(args)
@@ -153,7 +187,7 @@ def build_evaluation_command(args: argparse.Namespace, root: Path) -> list[str]:
         "--run-id",
         args.source_run_id,
         "--results-dir",
-        args.source_results_dir,
+        str(inference_results_dir or args.source_results_dir),
         "--resume",
         "--inference",
     ]
@@ -170,6 +204,8 @@ def build_evaluation_command(args: argparse.Namespace, root: Path) -> list[str]:
         command.extend(["--torch-device", torch_device])
     if args.timeout_wait is not None:
         command.extend(["--timeout-wait", str(args.timeout_wait)])
+    if args.base_port is not None:
+        command.extend(["--base-port", str(args.base_port)])
     if args.extra_mlagents_args:
         command.extend(args.extra_mlagents_args)
 
@@ -222,6 +258,29 @@ def resolve_eval_run_id(args: argparse.Namespace) -> str:
     return str(eval_run_id)
 
 
+def prepare_evaluation_output(args: argparse.Namespace, root: Path) -> None:
+    eval_run_id = resolve_eval_run_id(args)
+    if not eval_run_id or Path(eval_run_id).name != eval_run_id:
+        raise ValueError(f"Unsafe evaluation run ID: {eval_run_id!r}")
+    output_root = resolve(root, args.output_dir)
+    if output_root is None:
+        raise ValueError("evaluation output directory is required")
+    run_dir = (output_root / eval_run_id).resolve()
+    if output_root.resolve() not in run_dir.parents:
+        raise ValueError(f"Refusing evaluation output outside the requested root: {run_dir}")
+    if not run_dir.exists():
+        return
+    if args.dry_run:
+        raise FileExistsError(f"Dry-run output already exists: {run_dir}")
+    if not args.force_output:
+        raise FileExistsError(
+            f"Evaluation output already exists: {run_dir}. "
+            "Pass --force-output only after preserving any invalid attempt."
+        )
+    shutil.rmtree(run_dir)
+    print(f"Removed existing evaluation output before launch: {run_dir}")
+
+
 def write_runtime_config_overrides(args: argparse.Namespace, root: Path) -> None:
     override_dir = root / "configs" / "runtime_overrides"
     override_dir.mkdir(parents=True, exist_ok=True)
@@ -238,9 +297,18 @@ def write_runtime_config_overrides(args: argparse.Namespace, root: Path) -> None
         rule_value = args.manifest_data.get("rule_config")
     rule_override = override_dir / "active_rule_config.txt"
     if rule_value:
-        rule_override.write_text(str(rule_value).strip() + "\n", encoding="utf-8")
+        normalized_rule = resolve_config(root, "rule_config", str(rule_value))
+        rule_override.write_text(str(normalized_rule).strip() + "\n", encoding="utf-8")
     else:
         rule_override.write_text("", encoding="utf-8")
+
+    reward_value = manifest_value(args, "reward_config")
+    reward_override = override_dir / "active_reward_config.txt"
+    if reward_value:
+        normalized_reward = resolve_config(root, "reward_config", str(reward_value))
+        reward_override.write_text(str(normalized_reward).strip() + "\n", encoding="utf-8")
+    else:
+        reward_override.write_text("", encoding="utf-8")
 
 
 def file_record(root: Path, path: Path, label: str) -> dict[str, Any]:
@@ -263,6 +331,7 @@ def write_evaluation_metadata(
     command: list[str],
     checkpoints: list[Path],
     policies: list[Path],
+    inference_workspace: Path,
 ) -> Path:
     root = repo_root()
     eval_metadata_path = metadata_path.parent / "evaluation_metadata.json"
@@ -272,12 +341,16 @@ def write_evaluation_metadata(
         "learning_disabled": True,
         "fixed_policy_source_run_id": args.source_run_id,
         "source_results_dir": args.source_results_dir,
+        "source_training_artifacts_immutable": True,
+        "inference_workspace": str(inference_workspace),
+        "inference_workspace_ephemeral": True,
         "eval_run_id": metadata_path.parents[1].name,
         "seed": manifest_value(args, "seed"),
         "eval_environment_type": args.manifest_data.get("layout_split", "unspecified"),
         "scene": manifest_value(args, "scene"),
         "deterministic": args.deterministic,
         "max_runtime_seconds": args.max_runtime_seconds,
+        "target_episodes": args.target_episodes,
         "timeout_wait_seconds": args.timeout_wait,
         "mlagents_inference_flags": ["--resume", "--inference"],
         "command": command,
@@ -319,12 +392,23 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--env")
     parser.add_argument("--no-graphics", action="store_true")
     parser.add_argument("--timeout-wait", type=int, default=120)
+    parser.add_argument("--base-port", type=int)
     parser.add_argument("--deterministic", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--skip-checkpoint-check", action="store_true")
+    parser.add_argument(
+        "--force-output",
+        action="store_true",
+        help="Delete an existing evaluation run directory before writing any new artifacts.",
+    )
     parser.add_argument(
         "--max-runtime-seconds",
         type=int,
         help="Stop evaluation after this many seconds (fixed-duration comparisons).",
+    )
+    parser.add_argument(
+        "--target-episodes",
+        type=int,
+        help="Stop after at least this many completed episodes; max runtime becomes a failure timeout.",
     )
     parser.add_argument(
         "--dry-run",
@@ -335,6 +419,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--skip-kpi-summarization",
         action="store_true",
         help="Skip strict KPI summarization and output validation after evaluation.",
+    )
+    parser.add_argument(
+        "--forbid-fallback-log-copy",
+        action="store_true",
+        help="Fail instead of copying logs from Unity persistentDataPath fallback locations.",
     )
     parser.add_argument("extra_mlagents_args", nargs=argparse.REMAINDER)
     return parser
@@ -354,8 +443,8 @@ def main() -> int:
         args.manifest_data = load_yaml(manifest_path)
 
     try:
-        ensure_eval_preflight()
-        command = build_evaluation_command(args, root)
+        ensure_eval_preflight(args.base_port or 5004)
+        prepare_evaluation_output(args, root)
         source_results_dir = resolve(root, args.source_results_dir) or root / "results"
         checkpoints = behavior_checkpoint_paths(
             source_results_dir,
@@ -371,10 +460,26 @@ def main() -> int:
         if not args.skip_checkpoint_check:
             require_existing(checkpoints, "ML-Agents checkpoints")
 
+        eval_run_id = resolve_eval_run_id(args)
+        inference_workspace = prepare_inference_workspace(
+            root,
+            source_results_dir,
+            args.source_run_id,
+            args.behaviors,
+            eval_run_id,
+        )
+        atexit.register(shutil.rmtree, inference_workspace, ignore_errors=True)
+        command = build_evaluation_command(args, root, inference_workspace)
         metadata_args = build_metadata_args(args, command)
         metadata_path = save_metadata(metadata_args)
-        eval_metadata_path = write_evaluation_metadata(metadata_path, args, command, checkpoints, policies)
-        eval_run_id = resolve_eval_run_id(args)
+        eval_metadata_path = write_evaluation_metadata(
+            metadata_path,
+            args,
+            command,
+            checkpoints,
+            policies,
+            inference_workspace,
+        )
         write_runtime_config_overrides(args, root)
         prepare_run_log_routing(root, eval_run_id, args.output_dir, mode="evaluation")
     except Exception as exc:
@@ -390,8 +495,13 @@ def main() -> int:
         return 0
 
     eval_run_id = resolve_eval_run_id(args)
+    process_env = os.environ.copy()
+    process_env["LABYRINTH_REPO_ROOT"] = str(root)
+    configured_scene = manifest_value(args, "scene")
+    if configured_scene:
+        process_env["LABYRINTH_SCENE"] = str(configured_scene)
     try:
-        process = subprocess.Popen(command, cwd=root)
+        process = subprocess.Popen(command, cwd=root, env=process_env)
     except FileNotFoundError as exc:
         if exc.filename == "mlagents-learn":
             print(
@@ -405,21 +515,43 @@ def main() -> int:
             )
             return 127
         raise
-    try:
-        timeout = args.max_runtime_seconds if args.max_runtime_seconds and args.max_runtime_seconds > 0 else None
-        rc = process.wait(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        print(
-            f"Max runtime reached ({args.max_runtime_seconds}s). Terminating evaluation process.",
-            file=sys.stderr,
-        )
-        process.terminate()
+    target_episode_log = root / args.output_dir / eval_run_id / "logs" / "episode_log.csv"
+    deadline = (
+        time.monotonic() + args.max_runtime_seconds
+        if args.max_runtime_seconds and args.max_runtime_seconds > 0
+        else None
+    )
+    termination_reason = "process_exit"
+    completed_episodes = 0
+    while process.poll() is None:
+        if target_episode_log.exists():
+            with target_episode_log.open("r", encoding="utf-8", errors="replace") as handle:
+                completed_episodes = max(0, sum(1 for _ in handle) - 1)
+        if args.target_episodes and completed_episodes >= args.target_episodes:
+            termination_reason = "target_episodes_reached"
+            print(f"Episode target reached: {completed_episodes}/{args.target_episodes}. Terminating evaluation.")
+            process.terminate()
+            break
+        if deadline is not None and time.monotonic() >= deadline:
+            termination_reason = "runtime_limit_reached"
+            print(
+                f"Max runtime reached ({args.max_runtime_seconds}s) after {completed_episodes} episodes. "
+                "Terminating evaluation process.",
+                file=sys.stderr,
+            )
+            process.terminate()
+            break
+        time.sleep(1.0)
+
+    if process.poll() is None:
         try:
             process.wait(timeout=15)
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait()
-        rc = 124
+    process_rc = process.returncode
+    intentional_termination = termination_reason in {"target_episodes_reached", "runtime_limit_reached"}
+    rc = 124 if termination_reason == "runtime_limit_reached" else (0 if intentional_termination else process_rc)
 
     try:
         sync = collect_run_log_artifacts(
@@ -427,6 +559,7 @@ def main() -> int:
             eval_run_id,
             args.output_dir,
             strict=rc in (0, 124),
+            allow_fallback_copy=not args.forbid_fallback_log_copy,
         )
         copied = ", ".join(sync.copied) if sync.copied else "none"
         missing = ", ".join(sync.missing) if sync.missing else "none"
@@ -457,6 +590,9 @@ def main() -> int:
             "--csv-output",
             str(kpi_csv),
         ]
+        if eval_seed is None or int(eval_seed) < 0:
+            print(f"Refusing to summarize KPI output without a concrete seed for run '{eval_run_id}'.", file=sys.stderr)
+            return 2
         print(f"KPI summarization command: {shell_join(summarize_command)}")
         summarize_rc = subprocess.run(summarize_command, cwd=root).returncode
         if summarize_rc != 0:
@@ -476,7 +612,41 @@ def main() -> int:
             print(format_problem_report(output_problems, heading="Post-summarization KPI validation failed"), file=sys.stderr)
             return 2
 
-    return rc
+        kpi_payload = json.loads(kpi_json.read_text(encoding="utf-8"))
+        completed_episodes = int(kpi_payload.get("episodes", 0))
+
+    status_path = root / args.output_dir / eval_run_id / "metadata" / "evaluation_status.json"
+    status_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "run_id": eval_run_id,
+                "termination_reason": termination_reason,
+                "process_exit_code": process_rc,
+                "target_episodes": args.target_episodes,
+                "completed_episodes": completed_episodes,
+                "max_runtime_seconds": args.max_runtime_seconds,
+                "success": (
+                    completed_episodes >= args.target_episodes
+                    if args.target_episodes
+                    else rc in (0, 124)
+                ),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    if args.target_episodes and completed_episodes < args.target_episodes:
+        print(
+            f"Evaluation failed to reach episode target: {completed_episodes}/{args.target_episodes}.",
+            file=sys.stderr,
+        )
+        return 2
+
+    return 0 if intentional_termination else rc
 
 
 if __name__ == "__main__":

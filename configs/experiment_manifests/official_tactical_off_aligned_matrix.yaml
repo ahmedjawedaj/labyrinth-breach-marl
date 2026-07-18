@@ -1,0 +1,22 @@
+experiment_family: LB_3v2_tactical_off_official_v1
+seeds: [42, 101, 202, 606, 707]
+run_id_template: "LB_3v2_tactical_off_seed{seed}_{stage_id}"
+stop_condition_policy: fixed_trainer_step_budget
+preflight_audits: [budgets, reward]
+stages:
+  - id: stage1
+    order: 1
+    curriculum_stage: static_maze_fixed_spawn_easy
+    manifest: configs/experiment_manifests/exp_tactical_off_stage1_aligned.yaml
+  - id: stage2
+    order: 2
+    curriculum_stage: static_maze_random_spawn
+    manifest: configs/experiment_manifests/exp_tactical_off_stage2_aligned.yaml
+  - id: stage3
+    order: 3
+    curriculum_stage: dynamic_maze_low_frequency
+    manifest: configs/experiment_manifests/exp_tactical_off_stage3_aligned.yaml
+  - id: stage4
+    order: 4
+    curriculum_stage: dynamic_maze_high_frequency_tactical
+    manifest: configs/experiment_manifests/exp_tactical_off_stage4_aligned.yaml

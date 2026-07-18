@@ -1,0 +1,10 @@
+run_id: LB_3v2_memory_off_stage1
+seed: 42
+scene: 02_StaticMaze_3v2
+env_config: configs/env_configs/env_staticmaze_v1.yaml
+reward_config: configs/reward_configs/reward_v5_active_agents.yaml
+trainer_config: configs/trainer_configs/ppo_staticmaze_3v2.yaml
+curriculum_config: configs/curriculum_configs/curriculum_memory_off_aligned_v2.yaml
+curriculum_stage: static_maze_fixed_spawn_easy
+mode: training
+notes: Memory-off Stage 1 aligned exactly with the full fixed-static curriculum stage.

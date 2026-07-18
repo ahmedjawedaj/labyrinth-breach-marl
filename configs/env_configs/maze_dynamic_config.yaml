@@ -19,6 +19,9 @@ dynamic_walls:
   safe_buffer: 1.75
   allow_exit_blocking: false
   wall_lowered_offset: 3.0
+action_assist:
+  sentinel_pursuit_strength: 0.15
+  runner_evade_strength: 0.0
 observations:
   use_rays: true
   use_memory: true

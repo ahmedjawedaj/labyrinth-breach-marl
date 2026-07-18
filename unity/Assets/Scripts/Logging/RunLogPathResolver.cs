@@ -80,7 +80,7 @@ public static class RunLogPathResolver
 
     private static string GetRepoRootPath()
     {
-        return Path.GetFullPath(Path.Combine(Application.dataPath, "..", ".."));
+        return LabyrinthPathResolver.GetRepoRoot();
     }
 
     private static void WriteMarker(string fileName, string value)

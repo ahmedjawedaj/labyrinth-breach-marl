@@ -24,4 +24,5 @@ public sealed class SentinelRewardPolicy
     public float DeadEndForcingReward => config.TrapDeadEndForcingBonus;
     public float ExitDenialReward => config.TrapExitDenialPressureBonus;
     public float CorridorControlReward => config.TrapCorridorControlBonus;
+    public float IdlePenalty => config.SentinelIdlePenalty;
 }

@@ -1,0 +1,43 @@
+name: Publication integrity
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  publication-audits:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+      - name: Install audit dependencies
+        run: python -m pip install PyYAML==6.0.1 scipy==1.10.1
+      - name: Compile integrity scripts
+        run: >-
+          python -m py_compile
+          scripts/analyze_publication_statistics.py
+          scripts/analyze_paired_ablation.py
+          scripts/audit_publication_readiness.py
+          scripts/run_multiseed_curriculum.py
+          scripts/seed_completion_tracker.py
+          scripts/summarize_eval_kpis.py
+          scripts/validate_ablation_controls.py
+          scripts/validate_evaluation_controls.py
+      - name: Run publication tests
+        run: python -m unittest discover -s tests -v
+      - name: Validate training budgets
+        run: python scripts/validate_training_budgets.py
+      - name: Validate reward ablation
+        run: python scripts/validate_reward_ablation.py
+      - name: Validate evaluation controls
+        run: python scripts/validate_evaluation_controls.py
+      - name: Validate memory-off controls
+        run: python scripts/validate_ablation_controls.py --condition memory_off
+      - name: Validate action-assist intervention
+        run: python scripts/validate_ablation_controls.py --condition action_assist_on
+      - name: Validate dynamic-wall intervention
+        run: python scripts/validate_ablation_controls.py --condition dynamic_wall_off

@@ -8,9 +8,11 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{url}
+\usepackage{xurl}
 \usepackage{hyperref}
+\hypersetup{hidelinks}
 
-\title{Labyrinth Breach: Reinforcement Learning-based Multi-Agent Pursuit-Evasion in Dynamic Maze Environments}
+\title{Labyrinth Breach: A Reproducible Unity ML-Agents Benchmark for Asymmetric Multi-Agent Pursuit-Evasion in Dynamic Mazes}
 
 \author{
 \IEEEauthorblockN{
@@ -29,8 +31,14 @@ AI641 -- AI for Robotics
 
 \maketitle
 
+\begin{center}
+\fbox{\parbox{0.92\linewidth}{\centering\textbf{Superseded course-report version.}
+The canonical publication draft is \texttt{paper/labyrinth\_breach\_journal.tex};
+results here are retained only for historical comparison.}}
+\end{center}
+
 \begin{abstract}
-We present Labyrinth Breach, a configurable Unity ML-Agents environment for asymmetric multi-agent pursuit-evasion in dynamic mazes. Three Sentinel agents cooperatively pursue two Runner agents across procedurally generated layouts with shifting walls, exit zones, and partial observability. Agents observe through vector states, 360-degree raycasts, and last-known-position memory, and are trained with PPO using a custom tactical reward shaping framework (\texttt{v5\_active\_agents}) that addresses free-rider collapse through idle penalties, anti-clustering incentives, and exit-seeking shaping. Training follows a three-phase curriculum: open arena, static maze, and dynamic maze, totalling 5{,}750+ episodes across 2.5 million environment steps. The Sentinel win rate progresses from 100\% (open arena) to 66.8\% (dynamic maze) to a balanced 50\% on unseen layouts, demonstrating successful curriculum-driven learning and zero-shot generalization. The source code and trained models are publicly available.\footnote{\url{https://github.com/ahmedjawedaj/labyrinth-breach-marl}} A demonstration video of trained agents in the dynamic maze is available online.\footnote{\url{https://drive.google.com/file/d/1sxzKtpvVNh_UYYxchMTZzzZNKLDyh09w/view}}
+We present Labyrinth Breach, a configurable Unity ML-Agents benchmark for asymmetric multi-agent pursuit-evasion in dynamic maze environments. Three Sentinel agents cooperatively pursue two Runner agents across procedurally generated layouts with shifting walls, exit zones, and partial observability. Agents observe through vector states, 360-degree raycasts, and last-known-position memory, and are trained with PPO under a tactical reward-shaping framework designed to reduce free-rider collapse, cluster convergence, and passive evasion. Beyond the environment itself, we contribute an auditable evaluation pipeline that routes raw Unity logs into run-scoped artifacts, computes outcome and coordination metrics, and supports multi-seed seen/unseen layout evaluation and ablation studies. Preliminary legacy runs suggest that curriculum training improves behavior as environments progress from open arenas to dynamic mazes, but publication-grade claims require the stricter multi-seed protocol described in this paper. The source code and trained models are publicly available.\footnote{\url{https://github.com/ahmedjawedaj/labyrinth-breach-marl}} A demonstration video of trained agents in the dynamic maze is available online.\footnote{\url{https://drive.google.com/file/d/1sxzKtpvVNh_UYYxchMTZzzZNKLDyh09w/view}}
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -50,10 +58,10 @@ Simple chase environments do not capture the full difficulty of multi-agent coor
 Our contributions are as follows:
 \begin{itemize}
     \item A configurable asymmetric 3v2 pursuit-evasion environment with procedurally generated static and dynamic maze layouts.
-    \item A tactical reward shaping framework (\texttt{v5\_active\_agents}) that addresses free-rider collapse through idle penalties, anti-clustering incentives, and exit-seeking shaping, encouraging emergent multi-agent coordination beyond terminal win/loss signals.
+    \item A tactical reward shaping framework (\texttt{v5\_active\_agents}) that targets free-rider collapse, clustering, and passive evasion through configurable shaping terms.
     \item A memory-augmented partial observation design combining 360-degree raycasts with last-known-position tracking.
     \item A three-phase curriculum learning pipeline (open arena $\to$ static maze $\to$ dynamic maze) with transfer learning between stages.
-    \item Zero-shot generalization evaluation on unseen maze layouts demonstrating policy transfer without collapse.
+    \item A reproducible evaluation and evidence pipeline for multi-seed seen/unseen testing, coordination metrics, and ablations over memory, tactical rewards, dynamic walls, curriculum, and action assistance.
 \end{itemize}
 
 % ============================================================
@@ -68,7 +76,7 @@ Direct pursuit-evasion papers share the same capture-versus-escape structure as 
 
 \subsection{Cooperative and Mixed MARL}
 
-Multi-agent reinforcement learning faces a non-stationarity challenge because all agents update simultaneously. MADDPG addressed this through centralized training with decentralized execution \cite{lowe2017maddpg}. More recently, Yu et al. showed that PPO-based methods serve as strong practical baselines in cooperative settings when tuned carefully \cite{yu2022mappo}. We adopt PPO with parameter sharing as our primary training method because Unity ML-Agents supports it natively and it provides a reproducible engineering baseline.
+Multi-agent reinforcement learning faces a non-stationarity challenge because all agents update simultaneously. MADDPG addressed this through centralized training with decentralized execution \cite{lowe2017maddpg}. More recently, Yu et al. showed that PPO-based methods serve as strong practical baselines in cooperative settings when tuned carefully \cite{yu2022mappo}. We adopt PPO with parameter sharing as our primary training method because Unity ML-Agents supports it natively and provides a reproducible baseline; stronger centralized-credit baselines such as MA-POCA or MAPPO remain important comparison points for publication-grade evaluation.
 
 \subsection{Credit Assignment}
 
@@ -239,31 +247,19 @@ Phase & Scene & Steps & Transfer From \\
 
 \subsection{Evaluation Protocol}
 
-We evaluate trained policies in inference mode using fixed ONNX checkpoints. Evaluation uses three random seeds (42, 101, 202) on both seen and unseen maze layouts. The unseen layouts use different procedural seeds that were not part of the training curriculum. All evaluation runs use deterministic action selection.
+We evaluate trained policies in inference mode using fixed ONNX checkpoints. The publication protocol uses three policy seeds (42, 101, 202), one seen dynamic-maze split, and at least five held-out unseen layout seeds (101, 202, 303, 404, 505). All evaluation runs use deterministic action selection and must produce run-scoped raw logs: \texttt{episode\_log.csv}, \texttt{agent\_step\_log.csv}, \texttt{reward\_audit.csv}, and \texttt{replay\_events.csv}. A run is excluded from publication tables if any required log, metadata file, or KPI summary is missing.
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=0.47\textwidth]{ScreenShoots/Unity setup/during Inference/Screenshot from 2026-04-28 17-01-29.png}
-    \caption{Unity ML-Agents project loaded in the editor with the dynamic maze scene active.}
-    \label{fig:unity_setup}
-\end{figure}
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=0.47\textwidth]{ScreenShoots/dynamic maze scene/Screenshot from 2026-04-28 17-19-13.png}
-    \caption{Dynamic maze environment for the 3v2 pursuit-evasion task. Walls shift during episodes to change available paths.}
-    \label{fig:dynamic_maze}
-\end{figure}
+The evaluation protocol reports outcome metrics (Sentinel win rate, Runner win rate, escape rate, survival time, and capture times), coordination metrics (pincer episode rate, trap frequency, corridor-block events, exit-denial events, Sentinel spread, and Runner separation), path metrics (path efficiency and route-change proxies after wall shifts), and ablation deltas. Because the current environment includes optional action-assist blending in the controller, publication results must include an action-assist-off ablation before attributing coordination purely to learned policies.
 
 % ============================================================
 \section{Results}
 % ============================================================
 
-Training was conducted across three curriculum phases totalling 5{,}750+ episodes and approximately 2.5 million environment steps. Table~\ref{tab:phase_results} summarizes the per-phase performance metrics computed from the reward breakdown logs.
+This section separates two evidence layers. First, we retain legacy course-project summaries as historical motivation. Second, we report a validated checkpoint diagnostic produced by the run-scoped pipeline in Section~V-C. Neither layer is sufficient for final journal claims because independent policy-seed retraining and the full ablation matrix remain incomplete.
 
 \begin{table}[t]
 \centering
-\caption{Per-phase training performance summary.}
+\caption{Preliminary per-phase training performance summary from legacy artifacts.}
 \label{tab:phase_results}
 \begin{tabular}{lccc}
 \toprule
@@ -280,7 +276,31 @@ Cluster penalty & $-0.013$ & $-0.518$ & $-0.035$ \\
 \end{tabular}
 \end{table}
 
-The Sentinel win rate follows a clear curriculum-driven progression: near-perfect capture in the open arena and static maze (100\%), a competitive equilibrium in the dynamic maze (66.8\%), and a balanced 50/50 outcome on unseen layouts. This progression demonstrates that the Runners successfully learned to exploit environmental geometry for cover as the maze complexity increased, while the Sentinels maintained enough pursuit capability to prevent complete evasion dominance.
+The preliminary Sentinel win rate follows a curriculum-driven trend: near-perfect capture in the open arena/static maze setting, reduced dominance in the dynamic maze, and a balanced outcome in a small unseen-layout evaluation. We treat this as motivation rather than proof: stronger claims require repeated evaluation across policy seeds and multiple held-out layouts with confidence intervals.
+
+\subsection{Validated Checkpoint Diagnostic}
+
+After correcting standalone scene, rule-config, and reward-config routing, we evaluated the fixed \texttt{v5\_dynamicmaze} checkpoint pair across one seen layout and five held-out layout seeds. Three evaluation seeds were used, but these are not independent training seeds. Each matrix cell ran for 30 wall-clock seconds in deterministic inference mode. The audit accepted all 18 cells, all 108 required raw/KPI artifacts, and every episode-level scene/rule/reward provenance check.
+
+\begin{table}[t]
+\centering
+\caption{Validated fixed-checkpoint diagnostic. Confidence intervals are 95\% Wilson intervals over completed episodes.}
+\label{tab:validated_diagnostic}
+\begin{tabular}{lcc}
+\toprule
+Metric & Seen & Five unseen layouts \\
+\midrule
+Completed episodes & 12 & 106 \\
+Sentinel wins & 9 (75.0\%) & 73 (68.9\%) \\
+95\% CI & [46.8, 91.1]\% & [59.5, 76.9]\% \\
+Runner wins & 3 (25.0\%) & 33 (31.1\%) \\
+Escape rate & 0.0\% & 25.5\% \\
+Mean full capture time & 13.33 s & 21.04 s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The aggregate result remains Sentinel-favored, but held-out geometry matters: per-layout Sentinel win rate ranges from 33.3\% on seed 505 to 88.2\% on seed 202. This variation is evidence against a layout-invariant performance claim and motivates longer per-layout evaluation with independently trained policy seeds.
 
 \subsection{Reward Curves}
 
@@ -293,7 +313,7 @@ Figure~\ref{fig:reward_curves} shows the per-episode cumulative reward for both 
     \label{fig:reward_curves}
 \end{figure}
 
-Figure~\ref{fig:reward_breakdown} decomposes the total reward into terminal, shaping, trap-aware, and penalty components. The terminal reward dominates throughout, confirming that shaping guides learning without overriding the primary win/loss objective. Notably, the penalty component grows significantly in the dynamic maze phase, reflecting the increased difficulty of navigation with shifting walls.
+Figure~\ref{fig:reward_breakdown} decomposes the total reward into terminal, shaping, trap-aware, and penalty components. In the legacy run, terminal reward is the largest component, suggesting that shaping did not completely dominate win/loss learning. The publication pipeline verifies this claim by regenerating reward-breakdown tables from raw \texttt{reward\_audit.csv} files for every run.
 
 \begin{figure}[t]
     \centering
@@ -304,12 +324,12 @@ Figure~\ref{fig:reward_breakdown} decomposes the total reward into terminal, sha
 
 \subsection{Win Rate Convergence}
 
-Figure~\ref{fig:win_rate} shows the 100-episode rolling win rate for both teams. In the static maze phase, the Sentinel win rate is near 100\%. Upon entering the dynamic maze, the Runner win rate rises steadily from near-zero to approximately 49\% in the final 200 episodes, approaching Nash equilibrium. This convergence pattern is the hallmark of successful adversarial self-play: both teams continuously improve against each other until neither can gain a unilateral advantage.
+Figure~\ref{fig:win_rate} shows the 100-episode rolling win rate for both teams. In the static maze phase, the Sentinel win rate is near 100\%. Upon entering the dynamic maze, the Runner win rate rises from near-zero toward a more balanced outcome. We avoid claiming a Nash equilibrium from these traces alone; the stronger interpretation is that dynamic topology makes evasion more viable and reduces Sentinel dominance.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.48\textwidth]{fig_win_rate.pdf}
-    \caption{Dual win rate convergence. Sentinel (blue) and Runner (red) win rates approach 50\% Nash equilibrium in the dynamic maze phase.}
+    \caption{Dual win rate trend. Sentinel (blue) and Runner (red) win rates become more balanced in the dynamic maze phase.}
     \label{fig:win_rate}
 \end{figure}
 
@@ -320,13 +340,13 @@ Figure~\ref{fig:penalty_reduction} tracks penalty signals for both teams across 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.48\textwidth]{fig_penalty_reduction.pdf}
-    \caption{Penalty reduction over training for Sentinel (left) and Runner (right). Decreasing penalties demonstrate learned avoidance of unproductive behaviours.}
+    \caption{Penalty reduction over training for Sentinel (left) and Runner (right). Decreasing penalties are consistent with reduced unproductive behaviours in the legacy run.}
     \label{fig:penalty_reduction}
 \end{figure}
 
 \subsection{Shaping Signal Analysis}
 
-Figure~\ref{fig:shaping} shows the distance-based shaping signals that guide pursuit and evasion. The Sentinel chase-progress signal increases steadily in the static maze as agents learn efficient pathfinding, then fluctuates in the dynamic maze as wall shifts disrupt previously learned routes. The Runner exit-approach signal activates strongly in the dynamic maze, confirming that the \texttt{v5} exit-seeking shaping successfully addressed the passive-evasion failure mode.
+Figure~\ref{fig:shaping} shows the distance-based shaping signals that guide pursuit and evasion. The Sentinel chase-progress signal increases steadily in the static maze as agents learn efficient pathfinding, then fluctuates in the dynamic maze as wall shifts disrupt previously learned routes. The Runner exit-approach signal activates strongly in the dynamic maze, suggesting that the \texttt{v5} exit-seeking shaping reduced the passive-evasion failure mode.
 
 \begin{figure}[t]
     \centering
@@ -337,25 +357,18 @@ Figure~\ref{fig:shaping} shows the distance-based shaping signals that guide pur
 
 \subsection{Per-Phase Summary}
 
-Figure~\ref{fig:phase_summary} presents the per-phase comparison as bar charts. The win rate progression from 100\% Sentinel dominance to 50/50 equilibrium on unseen layouts provides the strongest evidence of successful curriculum learning and zero-shot generalization.
+Figure~\ref{fig:phase_summary} presents the per-phase comparison as bar charts. The progression motivates a curriculum-learning hypothesis, but final zero-shot generalization claims require the expanded unseen-layout protocol.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.48\textwidth]{fig_phase_summary.pdf}
-    \caption{Per-phase win rate (left) and mean reward (right). The progressive balancing of win rates demonstrates curriculum-driven equilibrium convergence.}
+    \caption{Per-phase win rate (left) and mean reward (right). The progressive balancing of win rates motivates the curriculum-learning hypothesis tested by the publication protocol.}
     \label{fig:phase_summary}
 \end{figure}
 
-\subsection{Zero-Shot Generalization}
+\subsection{Held-Out Configuration Transfer}
 
-The unseen maze evaluation used the \texttt{04\_Eval\_UnseenMaze\_3v2} scene with the Dynamic Maze checkpoint loaded in inference mode. Over 30 evaluation episodes, the Sentinel win rate was exactly 50.0\%, matching the final dynamic maze convergence. The mean Sentinel reward ($+0.257$) remained positive, and the cluster penalty dropped from $-0.518$ (dynamic maze training) to $-0.035$ (unseen evaluation), suggesting that the agents adapted their spacing strategy to the novel geometry. These results confirm that the policies learned general pursuit-evasion strategies rather than memorizing specific maze layouts.
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=0.47\textwidth]{ScreenShoots/Trapping behaviour/Screenshot from 2026-04-28 18-40-21.png}
-    \caption{Emergent corridor-pressure behaviour: multiple Sentinels converge on a Runner from different directions, demonstrating the anti-clustering effect.}
-    \label{fig:trapping}
-\end{figure}
+The validated diagnostic confirms that the dynamic-maze checkpoint can execute in the held-out scene with seed-specific rule and reward configurations. Across 106 completed unseen-scene episodes, the aggregate Sentinel win rate is 68.9\%. A later code audit established that all five seeds reused one hard-coded topology and that movement/wall parameters differed between seen and unseen files. The 33.3--88.2\% spread is therefore a compound configuration-shift diagnostic, not a topology-generalization result. All cells also use one trained checkpoint pair and short fixed-duration windows. The official experiment must repeat genuinely distinct generated topologies using independently trained policy seeds, matched controls, and fixed episode counts.
 
 % ============================================================
 \section{Discussion}
@@ -363,16 +376,16 @@ The unseen maze evaluation used the \texttt{04\_Eval\_UnseenMaze\_3v2} scene wit
 
 The results support three main findings.
 
-\textbf{Curriculum learning enables progressive skill acquisition.} The three-phase curriculum with transfer learning proved essential for developing complex pursuit-evasion skills. Agents trained directly in the dynamic maze from scratch showed erratic behaviour and failed to converge (we verified this by attempting a ``big brain'' configuration with 512 hidden units and 3 layers, which silently discarded the transferred weights due to architecture mismatch). The successful approach required keeping the network architecture identical (256 units, 2 layers) across all phases to enable seamless weight transfer via \texttt{--initialize-from}.
+\textbf{Curriculum learning is a central hypothesis.} The three-phase curriculum with transfer learning appears important for developing complex pursuit-evasion skills. However, this must be verified by a direct-dynamic-training ablation with the same network architecture and evaluation budget.
 
-\textbf{Custom reward shaping addresses specific failure modes.} The iterative development of the \texttt{v5\_active\_agents} reward configuration was driven by three observed failure modes:
+\textbf{Custom reward shaping targets specific failure modes.} The iterative development of the \texttt{v5\_active\_agents} reward configuration was driven by three observed failure modes:
 \begin{itemize}
-    \item \textit{Free-rider collapse:} In early training, one Sentinel learned to capture while others remained idle to collect the shared team reward. The \texttt{idle\_penalty} ($-0.002$/step) and increased \texttt{individual\_capture\_bonus} ($+0.25$) successfully eliminated this behaviour.
-    \item \textit{Cluster convergence:} All three Sentinels would chase the same Runner in single file, making evasion trivial. The \texttt{cluster\_penalty} ($-0.015$) forced spatial separation, and we observed emergent pincer formations in the dynamic maze.
-    \item \textit{Passive evasion:} Runners learned to survive by standing still, avoiding threat-approach penalties but never seeking exits. The \texttt{exit\_approach\_bonus} ($+0.005$) and \texttt{exit\_approach\_regression} ($-0.002$) activated goal-directed escape behaviour.
+    \item \textit{Free-rider collapse:} In early training, one Sentinel learned to capture while others remained idle to collect the shared team reward. The \texttt{idle\_penalty} ($-0.002$/step) and increased \texttt{individual\_capture\_bonus} ($+0.25$) were added to reduce this behavior.
+    \item \textit{Cluster convergence:} All three Sentinels would chase the same Runner in single file, making evasion trivial. The \texttt{cluster\_penalty} ($-0.015$) encourages spatial separation; publication results must quantify this through Sentinel spread and pincer/corridor metrics.
+    \item \textit{Passive evasion:} Runners learned to survive by standing still, avoiding threat-approach penalties but never seeking exits. The \texttt{exit\_approach\_bonus} ($+0.005$) and \texttt{exit\_approach\_regression} ($-0.002$) were added to encourage goal-directed escape behaviour.
 \end{itemize}
 
-\textbf{Zero-shot generalization validates learned strategies.} The 50\% win rate on unseen maze layouts demonstrates that the agents learned general pursuit and evasion strategies rather than memorizing specific routes. The sharp drop in cluster penalty from training ($-0.518$) to unseen evaluation ($-0.035$) further suggests that the agents adapt their spatial strategy to novel geometry.
+\textbf{Generalization remains the key empirical test.} The validated fixed-checkpoint diagnostic demonstrates executable transfer to a held-out scene under five configurations, not five topologies. The official protocol tests whether performance and coordination metrics persist across independent policy seeds and genuinely held-out geometries under matched dynamics.
 
 Compared to MatrixWorld~\cite{matrixworld2023}, which provides a grid-based pursuit-evasion benchmark, Labyrinth Breach operates in continuous 3D space with asymmetric teams, dynamic walls, and exit-based objectives. Compared to ViPER~\cite{viper2025}, which focuses on visibility-based pursuit, our environment adds team coordination pressure through the 3v2 asymmetry and tactical reward terms.
 
@@ -380,15 +393,15 @@ Compared to MatrixWorld~\cite{matrixworld2023}, which provides a grid-based purs
 \section{Limitations and Future Work}
 % ============================================================
 
-Several limitations remain. First, wall collision correctness under all dynamic shift configurations has not been exhaustively validated; rare edge cases during wall transitions could allow agents to clip through geometry. Second, the tactical reward shaping terms add complexity to the reward landscape and could be exploited in ways not yet detected. Third, the unseen maze evaluation uses a single layout seed with 30 episodes; a larger evaluation set across multiple unseen seeds would provide stronger statistical grounding. Fourth, the absence of LSTM memory in the current architecture means agents cannot remember past wall configurations, which may limit performance in highly dynamic environments.
+Several limitations remain. First, the current study is simulation-only and does not include physical robot validation. Second, wall collision correctness under all dynamic shift configurations has not been exhaustively validated; rare edge cases during wall transitions could allow agents to clip through geometry. Third, the tactical reward shaping terms add complexity to the reward landscape and could be exploited in ways not yet detected. Fourth, the current architecture uses last-known-position memory rather than recurrent neural memory, which may limit performance in highly dynamic environments. Fifth, the controller includes optional action-assist blending; publication results must disclose it and include an assist-off ablation.
 
-For future work, we plan to: (1) add LSTM memory (``Option B'') and compare against the current memoryless architecture; (2) compare PPO with MA-POCA to study whether centralized credit assignment produces measurably better coordination; (3) conduct ablation studies on the individual reward shaping terms to isolate their contributions; and (4) derive dedicated coordination metrics from step-level replay data to quantitatively measure emergent tactical behaviours such as pincer frequency and corridor denial duration.
+For future work, we plan to: (1) add LSTM memory and compare against the current last-known-position memory; (2) compare PPO with MA-POCA or MAPPO to study centralized credit assignment; (3) complete reward, memory, dynamic-wall, curriculum, and action-assist ablations; and (4) extend the benchmark toward hardware or high-fidelity robot simulators.
 
 % ============================================================
 \section{Conclusion}
 % ============================================================
 
-We presented Labyrinth Breach, a reinforcement learning environment for asymmetric multi-agent pursuit-evasion in dynamic mazes. Training across a three-phase curriculum (open arena $\to$ static maze $\to$ dynamic maze) totalling 5{,}750+ episodes and 2.5 million steps produced agents that progress from 100\% Sentinel dominance to a balanced 50/50 equilibrium on unseen layouts. The custom \texttt{v5\_active\_agents} reward configuration successfully addressed free-rider collapse, cluster convergence, and passive evasion through targeted penalty and shaping terms. Zero-shot generalization to unseen maze geometry confirms that the learned policies encode general pursuit and evasion strategies. The environment, training configurations, reward logs, and trained model checkpoints are publicly available for reproduction and extension.
+We presented Labyrinth Breach, a configurable Unity ML-Agents benchmark for asymmetric multi-agent pursuit-evasion in dynamic mazes. The environment combines dynamic topology, partial observability, exit-directed evasion, and tactical reward shaping in a reproducible 3v2 setting. Preliminary legacy results motivate curriculum learning and reward-shaping hypotheses, but final publication claims require the strict multi-seed evaluation and ablation protocol introduced here. The environment, training configurations, logging pipeline, and trained model checkpoints are publicly available for reproduction and extension.
 
 % ============================================================
 \section*{Acknowledgment}
@@ -438,14 +451,14 @@ O. Gonultas and V. Isler,
 arXiv preprint arXiv:2405.05372, 2024.
 
 \bibitem{matrixworld2023}
-Z. Cheng et al.,
-``MatrixWorld: A Pursuit-Evasion Platform for Safe Multi-Agent Reinforcement Learning,''
+L. Sun, Y.-C. Chang, C. Lyu, C.-T. Lin, and Y. Shi,
+``MatrixWorld: A Pursuit-Evasion Platform for Safe Multi-Agent Coordination and Autocurricula,''
 arXiv preprint arXiv:2307.14854, 2023.
 
 \bibitem{viper2025}
-Y. Wang, G. Sartoretti, and J. P. How,
+Y. Wang, Y. Cao, J. Chiun, S. Koley, M. Pham, and G. A. Sartoretti,
 ``ViPER: Visibility-based Pursuit-Evasion via Reinforcement Learning,''
-in \textit{Proceedings of Machine Learning Research}, 2025.
+in \textit{Proceedings of the 8th Conference on Robot Learning}, PMLR, vol. 270, pp. 4188--4200, 2025.
 
 \bibitem{yan2019uncertain}
 F. Yan, J. Jiang, K. Di, Y. Jiang, and Z. Hao,

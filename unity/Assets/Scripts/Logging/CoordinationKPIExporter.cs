@@ -17,6 +17,11 @@ public class CoordinationKPIExporter : MonoBehaviour
     private int episodeCounter;
     private int sentinelWinEpisodes;
     private int episodesWithAnyTrap;
+    private int trapCaptureSuccessEpisodes;
+    private int episodesWithPincer;
+    private int episodesWithCorridor;
+    private int episodesWithExitDenial;
+    private int episodesWithEnclosure;
     private int totalPincerCount;
     private int totalCorridorCount;
     private int totalExitDenialCount;
@@ -50,6 +55,30 @@ public class CoordinationKPIExporter : MonoBehaviour
         if (trapCount > 0)
         {
             episodesWithAnyTrap++;
+            if (captureSuccess)
+            {
+                trapCaptureSuccessEpisodes++;
+            }
+        }
+
+        if (metrics.PincerCount > 0)
+        {
+            episodesWithPincer++;
+        }
+
+        if (metrics.CorridorBlockCount > 0)
+        {
+            episodesWithCorridor++;
+        }
+
+        if (metrics.ExitDenialCount > 0)
+        {
+            episodesWithExitDenial++;
+        }
+
+        if (metrics.EnclosureCount > 0)
+        {
+            episodesWithEnclosure++;
         }
 
         totalPincerCount += Mathf.Max(0, metrics.PincerCount);
@@ -130,11 +159,11 @@ public class CoordinationKPIExporter : MonoBehaviour
     private string BuildSummaryRow()
     {
         float safeEpisodes = Mathf.Max(1, episodeCounter);
-        float pincerRate = totalPincerCount / safeEpisodes;
-        float corridorRate = totalCorridorCount / safeEpisodes;
-        float exitRate = totalExitDenialCount / safeEpisodes;
-        float trapSuccessRate = episodesWithAnyTrap > 0 ? (float)sentinelWinEpisodes / safeEpisodes : 0f;
-        float enclosureRate = totalEnclosureCount / safeEpisodes;
+        float pincerRate = episodesWithPincer / safeEpisodes;
+        float corridorRate = episodesWithCorridor / safeEpisodes;
+        float exitRate = episodesWithExitDenial / safeEpisodes;
+        float trapSuccessRate = episodesWithAnyTrap > 0 ? (float)trapCaptureSuccessEpisodes / episodesWithAnyTrap : 0f;
+        float enclosureRate = episodesWithEnclosure / safeEpisodes;
         return string.Join(
             ",",
             Csv(runId),

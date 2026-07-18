@@ -11,8 +11,8 @@
 \setbeamertemplate{navigation symbols}{}
 \setbeamertemplate{footline}[frame number]
 
-\title{Labyrinth Breach}
-\subtitle{Reinforcement Learning-based Multi-Agent Pursuit-Evasion\\in Dynamic Maze Environments}
+\title{Labyrinth Breach -- Legacy Course Presentation}
+\subtitle{Superseded May 2025 Results}
 \author{Muhammad Sikander Raheem \quad Usman Irshad Bhatti \quad Ahmed Jawed}
 \institute{MS AI, LUMS | AI641 -- AI for Robotics}
 \date{May 2025}
@@ -492,19 +492,19 @@ Training is staged. Each stage has both a \textbf{minimum-episode threshold} and
 \toprule
 Metric & Seen & Unseen \\
 \midrule
-Sentinel WR & 62.0\% & 60.3\% \\
-1st capture & 17.2s & 9.7s \\
-2nd capture & 37.8s & 24.5s \\
-Escape frac & 26.0\% & 26.8\% \\
-Timeout surv & 12.0\% & 12.9\% \\
+Episodes & 12 & 106 \\
+Sentinel WR & 75.0\% & 68.9\% \\
+Runner WR & 25.0\% & 31.1\% \\
+Escape rate & 0.0\% & 25.5\% \\
+Full capture & 13.3s & 21.0s \\
 \bottomrule
 \end{tabular}
 
 \vspace{6pt}
 \textbf{Key insight:}\\
-Win rates transfer (1.7pt drop).\\
-Capture timing shifts (7.5s faster).\\
-\textit{Policies are topology-sensitive but not layout-memorized.}
+One checkpoint executes in both scenes.\\
+The unseen seeds reused one topology and changed other dynamics.\\
+\textit{This is not controlled topology-generalization evidence.}
 \end{columns}
 \end{frame}
 

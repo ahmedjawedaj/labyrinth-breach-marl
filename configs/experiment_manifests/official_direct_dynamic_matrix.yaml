@@ -1,0 +1,11 @@
+experiment_family: LB_3v2_direct_dynamic_official_v1
+seeds: [42, 101, 202, 606, 707]
+stage_ids: [direct_dynamic]
+run_id_template: "LB_3v2_direct_dynamic_seed{seed}"
+stop_condition_policy: fixed_trainer_step_budget
+preflight_audits: [budgets, reward]
+stages:
+  - id: direct_dynamic
+    order: 1
+    curriculum_stage: dynamic_maze_high_frequency_tactical
+    manifest: configs/experiment_manifests/exp_direct_dynamic_matched.yaml

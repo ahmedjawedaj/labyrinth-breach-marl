@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import shlex
+import shutil
 import socket
 import subprocess
 import sys
@@ -28,6 +29,25 @@ def manifest_value(args: argparse.Namespace, key: str):
     return getattr(args, key) if getattr(args, key) is not None else args.manifest_data.get(key)
 
 
+def clean_forced_run_directory(args: argparse.Namespace, root: Path) -> None:
+    if not args.force or args.metadata_only:
+        return
+    if args.resume:
+        raise ValueError("--force and --resume cannot be used together.")
+    run_id = str(manifest_value(args, "run_id") or "").strip()
+    if not run_id or Path(run_id).name != run_id:
+        raise ValueError(f"Unsafe run ID for force cleanup: {run_id!r}")
+    results_root = resolve(root, args.results_dir)
+    if results_root is None:
+        raise ValueError("results directory is required for force cleanup.")
+    run_dir = (results_root / run_id).resolve()
+    if results_root.resolve() not in run_dir.parents:
+        raise ValueError(f"Refusing to clean a run outside the results root: {run_dir}")
+    if run_dir.exists():
+        shutil.rmtree(run_dir)
+        print(f"Removed existing run directory before forced launch: {run_dir}")
+
+
 def cuda_available() -> bool:
     try:
         import torch
@@ -44,19 +64,25 @@ def resolve_torch_device(args: argparse.Namespace) -> str | None:
                 "CUDA was requested, but PyTorch cannot access a GPU. "
                 "Run scripts/check_gpu_training.py for diagnostics."
             )
-        if args.torch_device == "cpu":
+        if args.torch_device == "mps":
             raise RuntimeError(
-                "CPU training is disabled for this project. "
-                "Use CUDA-enabled PyTorch and run with --torch-device cuda."
+                "ML-Agents 1.1.0 is incompatible with Apple MPS in this project "
+                "(mixed CPU/MPS tensors during policy evaluation). Use CUDA or explicitly allow CPU training."
+            )
+        if args.torch_device == "cpu" and not args.allow_cpu:
+            raise RuntimeError(
+                "CPU training requires explicit consent. Pass --allow-cpu with --torch-device cpu."
             )
         return args.torch_device
 
     if cuda_available():
         return "cuda"
+    if args.allow_cpu:
+        return "cpu"
 
     raise RuntimeError(
-        "GPU training is required, but CUDA is not available to PyTorch. "
-        "Run scripts/check_gpu_training.py, then fix the NVIDIA driver/CUDA setup."
+        "CUDA is unavailable and ML-Agents 1.1.0 cannot use Apple MPS reliably. "
+        "Pass --allow-cpu to opt into slower CPU training."
     )
 
 
@@ -86,6 +112,9 @@ def build_training_command(args: argparse.Namespace, root: Path) -> list[str]:
         command.append("--force")
     if args.resume:
         command.append("--resume")
+    initialize_from = manifest_value(args, "initialize_from")
+    if initialize_from:
+        command.extend(["--initialize-from", str(initialize_from)])
     if args.env:
         command.extend(["--env", args.env])
     if args.no_graphics:
@@ -94,6 +123,8 @@ def build_training_command(args: argparse.Namespace, root: Path) -> list[str]:
         command.extend(["--torch-device", torch_device])
     if args.timeout_wait is not None:
         command.extend(["--timeout-wait", str(args.timeout_wait)])
+    if args.base_port is not None:
+        command.extend(["--base-port", str(args.base_port)])
     if args.extra_mlagents_args:
         command.extend(args.extra_mlagents_args)
 
@@ -104,11 +135,17 @@ def shell_join(command: list[str]) -> str:
     return " ".join(shlex.quote(part) for part in command)
 
 
-def ensure_training_preflight() -> None:
+def ensure_training_preflight(base_port: int = 5004) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.settimeout(0.25)
-        if sock.connect_ex(("127.0.0.1", 5004)) == 0:
-            raise RuntimeError("Preflight failed: port 5004 is already in use.")
+        if sock.connect_ex(("127.0.0.1", base_port)) == 0:
+            raise RuntimeError(f"Preflight failed: port {base_port} is already in use.")
+
+    # The default port remains single-worker for backwards safety. Explicit,
+    # non-default ports are reserved for isolated worker roots, where runtime
+    # override files and result directories cannot race with another process.
+    if base_port != 5004:
+        return
 
     current_pid = str(os.getpid())
     proc_list = subprocess.run(
@@ -155,9 +192,22 @@ def write_runtime_config_overrides(args: argparse.Namespace, root: Path) -> None
     rule_value = manifest_value(args, "rule_config")
     rule_override = override_dir / "active_rule_config.txt"
     if rule_value:
-        rule_override.write_text(str(rule_value).strip() + "\n", encoding="utf-8")
+        rule_path = Path(str(rule_value).strip())
+        if not rule_path.is_absolute() and len(rule_path.parts) == 1:
+            rule_path = Path("configs/env_configs") / rule_path
+        rule_override.write_text(str(rule_path) + "\n", encoding="utf-8")
     else:
         rule_override.write_text("", encoding="utf-8")
+
+    reward_value = manifest_value(args, "reward_config")
+    reward_override = override_dir / "active_reward_config.txt"
+    if reward_value:
+        reward_path = Path(str(reward_value).strip())
+        if not reward_path.is_absolute() and len(reward_path.parts) == 1:
+            reward_path = Path("configs/reward_configs") / reward_path
+        reward_override.write_text(str(reward_path) + "\n", encoding="utf-8")
+    else:
+        reward_override.write_text("", encoding="utf-8")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -180,12 +230,20 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--matrix-total-stages", type=int)
     parser.add_argument("--extra-config", action="append", default=[])
     parser.add_argument("--torch-device")
+    parser.add_argument("--allow-cpu", action="store_true")
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--initialize-from")
     parser.add_argument("--env")
     parser.add_argument("--no-graphics", action="store_true")
     parser.add_argument("--timeout-wait", type=int)
+    parser.add_argument("--base-port", type=int)
     parser.add_argument("--metadata-only", action="store_true")
+    parser.add_argument(
+        "--forbid-fallback-log-copy",
+        action="store_true",
+        help="Fail instead of copying logs from Unity persistentDataPath fallback locations.",
+    )
     parser.add_argument("extra_mlagents_args", nargs=argparse.REMAINDER)
     return parser
 
@@ -218,6 +276,25 @@ def write_training_status(
     (metadata_dir / "training_status.json").write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def generate_run_kpis(root: Path, run_id: str, results_dir: str, logs_dir: Path, seed: int) -> int:
+    output_dir = root / results_dir / run_id / "kpis"
+    command = [
+        sys.executable,
+        "scripts/summarize_eval_kpis.py",
+        "--logs-dir",
+        str(logs_dir),
+        "--run-id",
+        run_id,
+        "--seed",
+        str(seed),
+        "--output",
+        str(output_dir / "eval_kpi_summary.json"),
+        "--csv-output",
+        str(output_dir / "eval_kpi_summary.csv"),
+    ]
+    return subprocess.run(command, cwd=root).returncode
+
+
 def main() -> int:
     root = repo_root()
     parser = build_parser()
@@ -230,7 +307,8 @@ def main() -> int:
 
     try:
         command = build_training_command(args, root)
-        ensure_training_preflight()
+        ensure_training_preflight(args.base_port or 5004)
+        clean_forced_run_directory(args, root)
         write_runtime_stage_override(args, root)
         write_runtime_config_overrides(args, root)
         args.training_command = shell_join(command)
@@ -255,8 +333,22 @@ def main() -> int:
         )
         return 0
 
+    write_training_status(
+        root,
+        str(manifest_value(args, "run_id")),
+        args.results_dir,
+        exit_code=None,
+        status="running",
+        logs_dir=root / args.results_dir / str(manifest_value(args, "run_id")) / "logs",
+    )
+
     try:
-        rc = subprocess.run(command, cwd=root).returncode
+        process_env = os.environ.copy()
+        process_env["LABYRINTH_REPO_ROOT"] = str(root)
+        configured_scene = manifest_value(args, "scene")
+        if configured_scene:
+            process_env["LABYRINTH_SCENE"] = str(configured_scene)
+        rc = subprocess.run(command, cwd=root, env=process_env).returncode
     except FileNotFoundError as exc:
         if exc.filename == "mlagents-learn":
             print(
@@ -285,12 +377,24 @@ def main() -> int:
             run_id,
             args.results_dir,
             strict=rc == 0,
+            allow_fallback_copy=not args.forbid_fallback_log_copy,
         )
         copied = ", ".join(sync.copied) if sync.copied else "none"
         missing = ", ".join(sync.missing) if sync.missing else "none"
         print(f"Run log sync target: {sync.logs_dir}")
         print(f"Run log sync copied: {copied}")
         print(f"Run log sync missing: {missing}")
+        if rc == 0:
+            kpi_rc = generate_run_kpis(
+                root,
+                run_id,
+                args.results_dir,
+                sync.logs_dir,
+                int(manifest_value(args, "seed")),
+            )
+            if kpi_rc != 0:
+                rc = kpi_rc
+                print(f"KPI generation failed with exit code {kpi_rc}.", file=sys.stderr)
         write_training_status(
             root,
             run_id,

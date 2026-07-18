@@ -1,0 +1,32 @@
+experiment_family: LB_3v2_direct_dynamic_training_eval_v1
+training_matrix_manifest: configs/experiment_manifests/official_direct_dynamic_matrix.yaml
+source_stage_id: direct_dynamic
+seeds:
+- 42
+- 101
+- 202
+- 606
+- 707
+duration_minutes: 30
+episodes_per_cell: 100
+deterministic_inference: true
+minimum_unseen_layout_count: 5
+splits:
+- id: seen_seed42
+  group: seen
+  manifest: configs/experiment_manifests/exp_direct_dynamic_training_seen_seed42.yaml
+- id: unseen_seed101
+  group: unseen
+  manifest: configs/experiment_manifests/exp_direct_dynamic_training_unseen_seed101.yaml
+- id: unseen_seed202
+  group: unseen
+  manifest: configs/experiment_manifests/exp_direct_dynamic_training_unseen_seed202.yaml
+- id: unseen_seed303
+  group: unseen
+  manifest: configs/experiment_manifests/exp_direct_dynamic_training_unseen_seed303.yaml
+- id: unseen_seed404
+  group: unseen
+  manifest: configs/experiment_manifests/exp_direct_dynamic_training_unseen_seed404.yaml
+- id: unseen_seed505
+  group: unseen
+  manifest: configs/experiment_manifests/exp_direct_dynamic_training_unseen_seed505.yaml

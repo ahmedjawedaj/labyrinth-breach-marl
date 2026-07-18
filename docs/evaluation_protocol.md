@@ -1,99 +1,77 @@
-# Evaluation Protocol
+# Evaluation Protocol v2
 
-## Purpose
+## Unit of evaluation
 
-Evaluation measures whether trained policies learned robust pursuit-evasion tactics or only memorized specific layouts and reward shortcuts.
+Policies are frozen during evaluation. The official matrix uses independent
+policy seeds `42`, `101`, and `202`; one seen topology; five held-out topology
+seeds `101`, `202`, `303`, `404`, and `505`; and 100 completed episodes per
+policy-topology cell. The 30-minute cap marks a failed/incomplete cell and is not
+the sampling unit.
 
-Evaluation must be separate from training. Policies are fixed during evaluation and no learning should occur.
+Policy seed is the replicate for training-level claims. Episodes and layouts
+from one checkpoint do not create additional independent policy replicates.
 
-## Evaluation Sets
+## Required artifacts and provenance
 
-Run evaluations on:
+Every cell must contain non-empty `episode_log.csv`, `agent_step_log.csv`,
+`reward_audit.csv`, `replay_events.csv`, `eval_kpi_summary.json`,
+`eval_kpi_summary.csv`, run/evaluation metadata, and a successful evaluation
+status. Episode rows must identify the effective scene, rule config, reward
+config, layout ID, and topology seed. A failed schema, provenance, hash, or
+episode-count audit excludes the cell.
 
-- open arena baseline
-- seen static maze
-- seen dynamic maze
-- unseen maze seeds
-- harder maze density variants
-- memory-disabled ablation
-- trap-reward-disabled ablation
+## Outcome and timing metrics
 
-The key comparison is seen versus unseen maze performance.
+- Sentinel and Runner win rates and exit/escape rate.
+- First-capture and full-capture time from replay-event timestamps.
+- Runner survival ending at that Runner's capture or episode termination,
+  averaged over runner-episodes.
+- Episode duration, reported under that name rather than as survival time.
 
-## Core Metrics
+## Coordination metrics
 
-Core outcome metrics:
+For pincer, corridor-block, exit-denial, enclosure, and trap events, report both:
 
-- Sentinel win rate
-- Runner win rate
-- average time to first capture
-- average time to full capture
-- exit success rate
-- survival time per Runner
+- episode prevalence: fraction of episodes containing at least one event; and
+- intensity: mean event count per episode.
 
-## Coordination Metrics
+Trap success is Sentinel wins conditional on a trap occurring. Sentinel spread
+and Runner separation are mean within-team pairwise planar distances, averaged
+over snapshots within each episode and then equally over episodes.
 
-Coordination metrics:
+## Path and dynamic-response metrics
 
-- pincer success rate
-- trap frequency
-- average Sentinel spread
-- average Runner separation
-- corridor block event count
-- exit denial event count
+Path integration is keyed by `(episode_id, agent_id)`, so teleports at episode
+reset are never counted as movement. Reports include captures per Sentinel meter,
+Runner/Sentinel meters per episode, and straight-line-displacement versus actual
+Runner-path ratio (explicitly labeled a proxy).
 
-These metrics are required because win rate alone does not prove coordinated behavior.
+For each dynamic wall shift at time `tau`, the route-change metric compares the
+Runner displacement vector during the one-second window before the shift with
+the vector during the one-second window after it. Windows with less than 0.05 m
+displacement are directionally undefined and excluded. Report mean absolute
+deflection in degrees, fraction of observations at least 45 degrees, number of
+Runner-shift observations, and number of wall-shift events.
 
-## Path Metrics
+Sentinel target reacquisition is measured at team level. A gap begins only
+after at least one Runner has been visible and all active Sentinels then lose
+visibility; it ends when any active Sentinel sees a Runner again. Initial
+acquisition is excluded, and gaps still open at episode termination are counted
+as right-censored rather than assigned the episode timeout.
 
-Path metrics:
+## Statistical reporting
 
-- path efficiency to exit
-- shortest path vs actual path ratio
-- route changes after wall shifts
-
-For dynamic mazes, path metrics should account for wall shifts changing available routes.
-
-## Generalization Metrics
-
-Generalization metrics:
-
-- seen maze win rate
-- unseen maze win rate
-- performance drop on unseen maps
-
-The goal is to identify whether policies learn tactics that transfer or simply memorize training layouts.
-
-## Evaluation Procedure
-
-For each evaluation run:
-
-1. Load trained policy.
-2. Disable learning.
-3. Set deterministic seed.
-4. Select evaluation scene and environment config.
-5. Run the configured number of episodes.
-6. Export per-step logs and per-episode summaries.
-7. Calculate metrics.
-8. Generate tables and plots.
-
-Each evaluation output must record:
-
-- run ID
-- model checkpoint or policy identifier
-- environment config
-- reward config
-- trainer config
-- seed
-- maze ID
-- commit hash
-
-## Required Outputs
-
-Evaluation should produce:
-
-- metric CSV or JSON files
-- summary tables
-- plots for paper figures
-- selected qualitative screenshots or videos
-- experiment manifests linking results to configs
+- Wilson 95% intervals for binary rates within a policy-layout cell.
+- Per-policy and per-layout tables; episode-weighted and layout-balanced means.
+- Mean, sample standard deviation, and Student-t learning-curve intervals across
+  policy seeds.
+- Hierarchical bootstrap over policies, layouts, then episodes for aggregate
+  outcome metrics.
+- Per-policy seen-minus-layout-balanced-held-out generalization gaps with
+  layout/episode bootstrap intervals.
+- A balanced seed-by-layout random-effects decomposition of cell means,
+  separating policy-seed, layout, and interaction-plus-cell-error variance.
+- Ablation deltas paired by policy seed and topology, with raw cell deltas,
+  bootstrap intervals, sign consistency, and `d_z` reported descriptively.
+- No Nash-equilibrium, broad zero-shot, or hardware-robotics claim from these
+  simulation results.

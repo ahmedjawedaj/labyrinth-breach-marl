@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 import math
+import statistics
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,7 +21,7 @@ from artifact_validation import (
 
 SENTINEL_WIN = "SentinelWinAllRunnersCaptured"
 RUNNER_WINS = {"RunnerWinExitReached", "RunnerWinTimeout"}
-PROTOCOL_VERSION = "evaluation_protocol.md@v1"
+PROTOCOL_VERSION = "evaluation_protocol.md@v2"
 
 
 def read_episode_rows(path: Path) -> list[dict[str, str]]:
@@ -62,13 +63,156 @@ def load_replay_capture_times(path: Path) -> tuple[dict[int, float], dict[int, l
         if event_type != "capture":
             continue
         episode_id = parse_episode_id(row)
-        timestamp = safe_float(row, "time")
+        timestamp_key = "time_seconds" if (row.get("time_seconds") or "").strip() else "time"
+        timestamp = safe_float(row, timestamp_key)
         captures_by_episode[episode_id].append(timestamp)
         if episode_id not in first_capture_by_episode:
             first_capture_by_episode[episode_id] = timestamp
         else:
             first_capture_by_episode[episode_id] = min(first_capture_by_episode[episode_id], timestamp)
     return first_capture_by_episode, captures_by_episode
+
+
+def load_wall_shift_times(path: Path) -> dict[int, list[float]]:
+    shifts_by_episode: dict[int, list[float]] = defaultdict(list)
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle):
+            if (row.get("event_type") or "").strip().lower() != "wall_shift":
+                continue
+            episode_id = parse_episode_id(row)
+            if episode_id <= 0:
+                continue
+            shifts_by_episode[episode_id].append(safe_float(row, "time_seconds"))
+    return shifts_by_episode
+
+
+def summarize_route_changes(
+    steps: list[dict[str, str]],
+    shifts_by_episode: dict[int, list[float]],
+    window_seconds: float = 1.0,
+    minimum_displacement: float = 0.05,
+) -> dict:
+    runner_steps: dict[tuple[int, str], list[tuple[float, float, float]]] = defaultdict(list)
+    for row in steps:
+        agent_id = row.get("agent_id", "")
+        if "Runner" not in agent_id or (row.get("alive") or "").strip().lower() != "true":
+            continue
+        runner_steps[(parse_episode_id(row), agent_id)].append(
+            (safe_float(row, "time_seconds"), safe_float(row, "pos_x"), safe_float(row, "pos_z"))
+        )
+    for trace in runner_steps.values():
+        trace.sort(key=lambda item: item[0])
+
+    def displacement(trace: list[tuple[float, float, float]], start: float, end: float) -> tuple[float, float] | None:
+        window = [sample for sample in trace if start <= sample[0] <= end]
+        if len(window) < 2:
+            return None
+        vector = (window[-1][1] - window[0][1], window[-1][2] - window[0][2])
+        if math.hypot(*vector) < minimum_displacement:
+            return None
+        return vector
+
+    angles: list[float] = []
+    for episode_id, shift_times in shifts_by_episode.items():
+        episode_traces = [trace for (trace_episode, _), trace in runner_steps.items() if trace_episode == episode_id]
+        for shift_time in shift_times:
+            for trace in episode_traces:
+                before = displacement(trace, shift_time - window_seconds, shift_time)
+                after = displacement(trace, shift_time, shift_time + window_seconds)
+                if before is None or after is None:
+                    continue
+                denominator = math.hypot(*before) * math.hypot(*after)
+                cosine = max(-1.0, min(1.0, (before[0] * after[0] + before[1] * after[1]) / denominator))
+                angles.append(math.degrees(math.acos(cosine)))
+
+    return {
+        "metric": "runner_heading_deflection_after_wall_shift",
+        "value": sum(angles) / len(angles) if angles else None,
+        "mean_abs_heading_change_degrees": sum(angles) / len(angles) if angles else None,
+        "rate_at_least_45_degrees": sum(angle >= 45.0 for angle in angles) / len(angles) if angles else None,
+        "runner_shift_observations": len(angles),
+        "wall_shift_events": sum(len(times) for times in shifts_by_episode.values()),
+        "window_seconds_before_and_after": window_seconds,
+        "minimum_displacement_meters_per_window": minimum_displacement,
+        "note": "Angle between Runner displacement vectors immediately before and after each logged wall shift.",
+    }
+
+
+def mean_team_spread(steps: list[dict[str, str]], team: str) -> float | None:
+    positions_by_snapshot: dict[tuple[int, int], list[tuple[float, float]]] = defaultdict(list)
+    for row in steps:
+        if (row.get("team") or "").strip() != team:
+            continue
+        if (row.get("alive") or "").strip().lower() != "true":
+            continue
+        positions_by_snapshot[(parse_episode_id(row), safe_int(row, "step_id"))].append(
+            (safe_float(row, "pos_x"), safe_float(row, "pos_z"))
+        )
+
+    snapshot_means_by_episode: dict[int, list[float]] = defaultdict(list)
+    for (episode_id, _), positions in positions_by_snapshot.items():
+        distances = [
+            math.dist(positions[left], positions[right])
+            for left in range(len(positions))
+            for right in range(left + 1, len(positions))
+        ]
+        if distances:
+            snapshot_means_by_episode[episode_id].append(sum(distances) / len(distances))
+    episode_means = [sum(values) / len(values) for values in snapshot_means_by_episode.values() if values]
+    return sum(episode_means) / len(episode_means) if episode_means else None
+
+
+def summarize_target_reacquisition(steps: list[dict[str, str]], team: str = "Sentinel") -> dict:
+    snapshots: dict[tuple[int, int], dict[str, object]] = {}
+    for row in steps:
+        if (row.get("team") or "").strip() != team:
+            continue
+        if (row.get("alive") or "").strip().lower() != "true":
+            continue
+        key = (parse_episode_id(row), safe_int(row, "step_id"))
+        snapshot = snapshots.setdefault(
+            key,
+            {"time_seconds": safe_float(row, "time_seconds"), "target_visible": False},
+        )
+        snapshot["time_seconds"] = max(
+            float(snapshot["time_seconds"]), safe_float(row, "time_seconds")
+        )
+        if (row.get("visible_target_id") or "").strip():
+            snapshot["target_visible"] = True
+
+    by_episode: dict[int, list[tuple[int, float, bool]]] = defaultdict(list)
+    for (episode_id, step_id), snapshot in snapshots.items():
+        by_episode[episode_id].append(
+            (step_id, float(snapshot["time_seconds"]), bool(snapshot["target_visible"]))
+        )
+
+    completed_gaps: list[float] = []
+    right_censored = 0
+    for episode_snapshots in by_episode.values():
+        has_seen_target = False
+        occlusion_started: float | None = None
+        for _, timestamp, target_visible in sorted(episode_snapshots):
+            if target_visible:
+                if occlusion_started is not None:
+                    completed_gaps.append(max(0.0, timestamp - occlusion_started))
+                    occlusion_started = None
+                has_seen_target = True
+            elif has_seen_target and occlusion_started is None:
+                occlusion_started = timestamp
+        if occlusion_started is not None:
+            right_censored += 1
+
+    return {
+        "metric": "sentinel_team_target_reacquisition_delay",
+        "mean_seconds": statistics.fmean(completed_gaps) if completed_gaps else None,
+        "median_seconds": statistics.median(completed_gaps) if completed_gaps else None,
+        "completed_occlusion_gaps": len(completed_gaps),
+        "right_censored_occlusion_gaps": right_censored,
+        "note": (
+            "Elapsed time from loss of all team-level visible Runner targets to the next visible target; "
+            "initial acquisition is excluded."
+        ),
+    }
 
 
 def parse_reward_audit(path: Path) -> tuple[dict[int, dict[str, float]], dict[str, float]]:
@@ -132,11 +276,15 @@ def summarize_coordination(
         return numerator / denominator if denominator > 0 else 0.0
 
     return {
-        "pincer_rate": safe_rate(pincer_presence, total_episodes),
-        "corridor_block_rate": safe_rate(corridor_presence, total_episodes),
-        "exit_denial_rate": safe_rate(exit_denial_presence, total_episodes),
+        "pincer_episode_rate": safe_rate(pincer_presence, total_episodes),
+        "corridor_block_episode_rate": safe_rate(corridor_presence, total_episodes),
+        "exit_denial_episode_rate": safe_rate(exit_denial_presence, total_episodes),
+        "trap_episode_rate": safe_rate(trap_presence, total_episodes),
         "trap_success_rate": safe_rate(sum(1 for episode_id in sentinel_wins if reward_events_per_episode.get(episode_id, {}).get("trap_event_count", 0.0) > 0), trap_presence),
-        "enclosure_rate": safe_rate(enclosure_presence, total_episodes),
+        "enclosure_episode_rate": safe_rate(enclosure_presence, total_episodes),
+        "pincer_events_per_episode": sum(events.get("pincer_event_count", 0.0) for events in reward_events_per_episode.values()) / total_episodes,
+        "corridor_block_events_per_episode": sum(events.get("corridor_block_event_count", 0.0) for events in reward_events_per_episode.values()) / total_episodes,
+        "exit_denial_events_per_episode": sum(events.get("exit_denial_event_count", 0.0) for events in reward_events_per_episode.values()) / total_episodes,
         "pincer_capture_correlation": safe_rate(pincer_success, pincer_presence),
         "corridor_capture_correlation": safe_rate(corridor_success, corridor_presence),
         "exit_denial_capture_correlation": safe_rate(exit_success, exit_denial_presence),
@@ -155,13 +303,14 @@ def summarize(args: argparse.Namespace) -> dict:
         / max(1, sentinel_wins)
     )
     first_capture_by_episode, captures_by_episode = load_replay_capture_times(args.replay_log)
+    wall_shifts_by_episode = load_wall_shift_times(args.replay_log)
     mean_first_capture_time = (
         sum(first_capture_by_episode.values()) / max(1, len(first_capture_by_episode))
     )
     reward_events_per_episode, reward_event_totals = parse_reward_audit(args.reward_audit_log)
 
     summary = {
-        "schema_version": 2,
+        "schema_version": 3,
         "protocol_version": PROTOCOL_VERSION,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "run_id": args.run_id,
@@ -187,42 +336,46 @@ def summarize(args: argparse.Namespace) -> dict:
 
     if args.step_log and args.step_log.exists():
         steps = read_step_rows(args.step_log)
-        path_by_agent = defaultdict(float)
-        prev_pos = {}
+        path_by_agent_episode: dict[tuple[int, str], float] = defaultdict(float)
+        prev_pos: dict[tuple[int, str], tuple[float, float]] = {}
         stalled = 0
-        survival_time_by_runner: dict[str, float] = defaultdict(float)
+        survival_time_by_runner_episode: dict[tuple[int, str], float] = defaultdict(float)
         for row in steps:
             agent_id = row.get("agent_id", "")
+            episode_agent = (parse_episode_id(row), agent_id)
             pos = (safe_float(row, "pos_x"), safe_float(row, "pos_z"))
             speed = math.sqrt(
                 safe_float(row, "vel_x") ** 2 + safe_float(row, "vel_z") ** 2
             )
             if speed < args.stall_speed_threshold:
                 stalled += 1
-            if agent_id in prev_pos:
-                dx = pos[0] - prev_pos[agent_id][0]
-                dz = pos[1] - prev_pos[agent_id][1]
-                path_by_agent[agent_id] += math.sqrt(dx * dx + dz * dz)
-            prev_pos[agent_id] = pos
+            if episode_agent in prev_pos:
+                dx = pos[0] - prev_pos[episode_agent][0]
+                dz = pos[1] - prev_pos[episode_agent][1]
+                path_by_agent_episode[episode_agent] += math.sqrt(dx * dx + dz * dz)
+            prev_pos[episode_agent] = pos
             if "Runner" in agent_id and (row.get("alive") or "").strip().lower() == "true":
-                survival_time_by_runner[agent_id] = max(survival_time_by_runner[agent_id], safe_float(row, "time_seconds"))
+                survival_time_by_runner_episode[episode_agent] = max(
+                    survival_time_by_runner_episode[episode_agent], safe_float(row, "time_seconds")
+                )
 
-        sentinel_path = sum(v for k, v in path_by_agent.items() if "Sentinel" in k)
-        runner_path = sum(v for k, v in path_by_agent.items() if "Runner" in k)
+        sentinel_path = sum(v for (_, agent_id), v in path_by_agent_episode.items() if "Sentinel" in agent_id)
+        runner_path = sum(v for (_, agent_id), v in path_by_agent_episode.items() if "Runner" in agent_id)
         captures = sum(safe_float(row, "capture_count") for row in episodes)
         runner_displacement = 0.0
-        runner_steps_first: dict[str, tuple[float, float]] = {}
-        runner_steps_last: dict[str, tuple[float, float]] = {}
+        runner_steps_first: dict[tuple[int, str], tuple[float, float]] = {}
+        runner_steps_last: dict[tuple[int, str], tuple[float, float]] = {}
         for row in steps:
             agent_id = row.get("agent_id", "")
             if "Runner" not in agent_id:
                 continue
+            episode_agent = (parse_episode_id(row), agent_id)
             pos = (safe_float(row, "pos_x"), safe_float(row, "pos_z"))
-            if agent_id not in runner_steps_first:
-                runner_steps_first[agent_id] = pos
-            runner_steps_last[agent_id] = pos
-        for agent_id, first_pos in runner_steps_first.items():
-            last_pos = runner_steps_last.get(agent_id, first_pos)
+            if episode_agent not in runner_steps_first:
+                runner_steps_first[episode_agent] = pos
+            runner_steps_last[episode_agent] = pos
+        for episode_agent, first_pos in runner_steps_first.items():
+            last_pos = runner_steps_last.get(episode_agent, first_pos)
             dx = last_pos[0] - first_pos[0]
             dz = last_pos[1] - first_pos[1]
             runner_displacement += math.sqrt(dx * dx + dz * dz)
@@ -230,6 +383,8 @@ def summarize(args: argparse.Namespace) -> dict:
         summary["path_efficiency"] = {
             "captures_per_meter": captures / max(1.0, sentinel_path),
             "shortest_path_vs_actual_ratio_proxy": runner_displacement / max(1.0, runner_path),
+            "sentinel_path_meters_per_episode": sentinel_path / max(1, total),
+            "runner_path_meters_per_episode": runner_path / max(1, total),
             "note": "Shortest path ratio uses straight-line proxy from step traces.",
         }
         summary["wall_collision_recovery_time_proxy"] = {
@@ -238,13 +393,15 @@ def summarize(args: argparse.Namespace) -> dict:
             "note": "Proxy from low-speed step fraction; direct collision recovery time is not logged yet.",
         }
         summary["runner_survival_time_seconds_mean"] = (
-            sum(survival_time_by_runner.values()) / max(1, len(survival_time_by_runner))
+            sum(survival_time_by_runner_episode.values()) / max(1, len(survival_time_by_runner_episode))
         )
-        summary["dynamic_route_change_proxy"] = {
-            "metric": "runner_path_per_episode",
-            "value": runner_path / max(1, total),
-            "note": "Proxy for route changes after wall shifts.",
+        summary["spatial_coordination"] = {
+            "sentinel_spread_meters_mean": mean_team_spread(steps, "Sentinel"),
+            "runner_separation_meters_mean": mean_team_spread(steps, "Runner"),
+            "note": "Within-team pairwise planar distance averaged over snapshots per episode, then equally over episodes.",
         }
+        summary["target_reacquisition"] = summarize_target_reacquisition(steps)
+        summary["dynamic_route_change_proxy"] = summarize_route_changes(steps, wall_shifts_by_episode)
 
     capture_sequence = {
         str(k): sorted(v) for k, v in captures_by_episode.items()

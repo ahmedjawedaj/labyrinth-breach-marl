@@ -1,0 +1,14 @@
+run_id: LB_3v2_tactical_reward_off_unseen_seed404_v1
+seed: 404
+scene: 04_Eval_UnseenMaze_3v2
+mode: evaluation
+env_config: env_unseen_eval_v1.yaml
+rule_config: maze_unseen_eval_seed404.yaml
+trainer_config: ppo_dynamicmaze_3v2.yaml
+reward_config: reward_v5_tactical_off.yaml
+curriculum_config: configs/curriculum_configs/curriculum_3v2_full_v1.yaml
+layout_split: unseen
+held_out_seeds:
+- 404
+notes: Evaluation for the independently retrained tactical_reward_off condition under
+  matched topology and non-ablated controls.

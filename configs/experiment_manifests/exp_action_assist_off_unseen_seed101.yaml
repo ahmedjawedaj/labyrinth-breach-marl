@@ -1,0 +1,16 @@
+run_id: LB_3v2_action_assist_off_unseen_seed101_v1
+seed: 101
+scene: 04_Eval_UnseenMaze_3v2
+mode: evaluation
+env_config: env_unseen_eval_v1.yaml
+rule_config: maze_unseen_eval_config_no_assist.yaml
+trainer_config: ppo_dynamicmaze_3v2.yaml
+reward_config: reward_v5_active_agents.yaml
+curriculum_config: configs/curriculum_configs/curriculum_3v2_full_v1.yaml
+layout_split: unseen
+held_out_seeds:
+- 101
+- 202
+- 303
+notes: Matched evaluation-only action_assist_off intervention; all other rule parameters
+  are identical to the canonical split.

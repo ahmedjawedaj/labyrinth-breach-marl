@@ -228,6 +228,7 @@ def merge_manifest_and_args(args: argparse.Namespace, root: Path) -> dict[str, A
         "matrix_stage_id",
         "matrix_stage_order",
         "matrix_total_stages",
+        "initialize_from",
     ]:
         value = getattr(args, field, None)
         if value is not None:
@@ -314,6 +315,7 @@ def save_metadata(args: argparse.Namespace) -> Path:
         "matrix_stage_id": metadata.get("matrix_stage_id"),
         "matrix_stage_order": metadata.get("matrix_stage_order"),
         "matrix_total_stages": metadata.get("matrix_total_stages"),
+        "initialize_from": metadata.get("initialize_from"),
         "mode": metadata.get("mode", "training"),
         "unity_scene_name": metadata.get("scene"),
         "notes": metadata.get("notes"),

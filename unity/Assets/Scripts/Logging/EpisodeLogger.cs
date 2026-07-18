@@ -2,11 +2,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class EpisodeLogger : MonoBehaviour
 {
     private const string Header =
-        "episode_id,outcome,duration_seconds,total_steps,capture_count,exit_count,wall_shift_count,trap_event_count,rule_config_path,reward_config_path,reward_config_id,curriculum_stage_id,sentinel_reward_total,runner_reward_total,capture_reward_total,trap_reward_total,shaping_reward_total,penalty_reward_total,terminal_reward_total";
+        "episode_id,outcome,duration_seconds,total_steps,capture_count,exit_count,wall_shift_count,trap_event_count,rule_config_path,reward_config_path,reward_config_id,curriculum_stage_id,scene_name,maze_layout_id,maze_topology_seed,sentinel_reward_total,runner_reward_total,capture_reward_total,trap_reward_total,shaping_reward_total,penalty_reward_total,terminal_reward_total";
 
     [SerializeField] private string logDirectoryName = "LabyrinthBreachLogs";
     [SerializeField] private bool writeLogs = true;
@@ -71,6 +72,9 @@ public class EpisodeLogger : MonoBehaviour
             Csv(environmentController != null ? environmentController.RewardConfigPath : string.Empty),
             Csv(rewardConfigId),
             Csv(environmentController != null ? environmentController.ActiveCurriculumStageId : string.Empty),
+            Csv(SceneManager.GetActiveScene().name),
+            Csv(environmentController != null ? environmentController.ActiveMazeLayoutId : string.Empty),
+            (environmentController != null ? environmentController.ActiveMazeTopologySeed : -1).ToString(CultureInfo.InvariantCulture),
             (rewardEngine != null ? rewardEngine.GetTeamTotal(sentinels) : 0f).ToString("0.000000", CultureInfo.InvariantCulture),
             (rewardEngine != null ? rewardEngine.GetTeamTotal(runners) : 0f).ToString("0.000000", CultureInfo.InvariantCulture),
             GetCategoryTotal(rewardEngine, "capture").ToString("0.000000", CultureInfo.InvariantCulture),

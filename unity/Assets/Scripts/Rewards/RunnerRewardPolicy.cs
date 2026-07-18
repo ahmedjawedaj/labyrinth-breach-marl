@@ -19,4 +19,6 @@ public sealed class RunnerRewardPolicy
     public float ThreatRadius => config.RunnerThreatRadius;
     public float ExplorationVisitBonus => config.RunnerExplorationVisitBonus;
     public float OrbitStallPenalty => config.RunnerOrbitStallPenalty;
+    public float ExitApproachBonus => config.RunnerExitApproachBonus;
+    public float ExitApproachPenalty => config.RunnerExitApproachPenalty;
 }

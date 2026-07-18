@@ -463,6 +463,7 @@ MonoBehaviour:
   sentinelSpeed: 4
   runnerSpeed: 4.5
   agentParent: {fileID: 0}
+  environmentController: {fileID: 5002}
 --- !u!1 &5000
 GameObject:
   m_ObjectHideFlags: 0
@@ -511,6 +512,10 @@ MonoBehaviour:
   spawnManager: {fileID: 4002}
   episodeStateTracker: {fileID: 5003}
   episodeDurationSeconds: 120
+  minSecondsBeforeTerminalChecks: 3
+  minimumStartTeamSeparation: 2.5
+  minRunnerTravelBeforeTerminalChecks: 1.25
+  minSentinelTravelBeforeTerminalChecks: 1.25
   startEpisodeOnStart: 1
   timeoutCountsAsRunnerWin: 1
   loadRuleConfigOnBeginEpisode: 1
@@ -520,8 +525,11 @@ MonoBehaviour:
   verifyResetIntegrity: 1
   mazeGenerator: {fileID: 6002}
   dynamicWallController: {fileID: 7002}
-  loadCurriculumConfigOnBeginEpisode: 0
+  loadCurriculumConfigOnBeginEpisode: 1
   curriculumConfigPath: ../configs/curriculum_configs/curriculum_3v2_full_v1.yaml
+  runtimeStageOverridePath: ../configs/runtime_overrides/active_stage.txt
+  runtimeCurriculumOverridePath: ../configs/runtime_overrides/active_curriculum_config.txt
+  runtimeRuleOverridePath: ../configs/runtime_overrides/active_rule_config.txt
   curriculumStageIndex: -1
   observationPositionScale: 26
   observationMaxSpeed: 6
@@ -534,25 +542,49 @@ MonoBehaviour:
   visibilityBlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  movementBlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  preventWallPassThrough: 1
   arenaBoundsCollider: {fileID: 1004}
   arenaBoundsRenderer: {fileID: 0}
   arenaCenterOverride: {fileID: 0}
   arenaHalfExtents: {x: 13, y: 13}
   arenaBoundaryPadding: 0.35
+  confinementAgentHalfExtentXZ: 0.5
   exitTag: Exit
   wallShiftIntervalSeconds: 12
+  exitReachRadius: 1.15
+  enforceConfinementInLateUpdate: 1
   rewardEngine: {fileID: 0}
-  rewardConfigPath: ../configs/reward_configs/reward_shared_basic_v1.yaml
+  rewardConfigPath: ../configs/reward_configs/reward_v5_active_agents.yaml
   survivalRewardIntervalSeconds: 1
+  wallLoopPenaltyCheckIntervalSeconds: 0.5
+  wallLoopLowDisplacementThreshold: 0.08
+  wallLoopMinWallProximity: 0.7
+  pursuitShapingIntervalSeconds: 0.8
+  orbitStallDistanceThreshold: 1.8
+  orbitStallDeltaThreshold: 0.05
+  orbitStallRepeatThreshold: 3
+  sentinelTeammateFocusDeltaThreshold: 0.08
+  sentinelChaseProgressDeadzone: 0.04
+  sentinelNonProgressRepeatThreshold: 2
+  sentinelCloseEngagementDistance: 3.25
+  sentinelPursuitAssistStrength: 0.15
+  runnerEvadeAssistStrength: 0
   stepLogger: {fileID: 0}
   episodeLogger: {fileID: 0}
   replayEventExporter: {fileID: 0}
+  coordinationKpiExporter: {fileID: 0}
   enableStepLogging: 1
   enableEpisodeLogging: 1
   enableReplayExport: 1
   logEpisodeEvents: 1
   debugDrawEnvironment: 1
   debugDrawEnvironmentLabels: 1
+  showRewardHud: 1
+  rewardHudPosition: {x: 14, y: 14}
+  rewardHudSize: {x: 370, y: 170}
   debugExitColor: {r: 0, g: 1, b: 0, a: 1}
   debugWallTimerColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   debugArenaBoundsColor: {r: 0, g: 1, b: 1, a: 1}
@@ -626,6 +658,8 @@ MonoBehaviour:
   useUnseenLayout: 0
   randomizeSpawns: 0
   randomizeExits: 0
+  randomizedSentinelSeparation: 2.5
+  randomizedRunnerSeparationFromSentinels: 5.5
   spawnManager: {fileID: 4002}
   environmentController: {fileID: 5002}
   dynamicWallController: {fileID: 7002}

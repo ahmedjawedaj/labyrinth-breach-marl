@@ -10,7 +10,7 @@ public class RewardEngine : MonoBehaviour
     private const string RewardBreakdownHeader =
         "episode_id,team,total_reward,terminal_reward,shaping_reward,trap_aware_reward,exploration_reward,penalties,reward_breakdown";
 
-    [SerializeField] private string rewardConfigPath = "../configs/reward_configs/reward_shared_basic_v1.yaml";
+    [SerializeField] private string rewardConfigPath = "../configs/reward_configs/reward_v5_active_agents.yaml";
     [SerializeField] private float trapEvaluationIntervalSeconds = 1f;
     [SerializeField] private float trapDetectionDistance = 4f;
     [SerializeField] private float exitDenialDistance = 2.25f;
@@ -300,6 +300,75 @@ public class RewardEngine : MonoBehaviour
                 stepId,
                 elapsedSeconds,
                 $"evade_delta={delta:0.000}");
+        }
+    }
+
+    public void ApplyRunnerExitDelta(
+        RunnerAgent runner,
+        float previousDistance,
+        float currentDistance,
+        int stepId,
+        float elapsedSeconds)
+    {
+        if (runner == null || previousDistance <= 1e-4f || currentDistance <= 1e-4f)
+        {
+            return;
+        }
+
+        float delta = previousDistance - currentDistance;
+        float deadzone = Mathf.Max(0.01f, 0.05f);
+        float scaleDivisor = Mathf.Max(0.25f, shapingDeltaScale);
+        if (delta > deadzone)
+        {
+            float scaled = Mathf.Clamp01(delta / scaleDivisor);
+            ApplyReward(
+                runner,
+                null,
+                RewardEvent.ExitApproachProgress,
+                runnerPolicy.ExitApproachBonus * scaled,
+                stepId,
+                elapsedSeconds,
+                $"exit_approach_delta={delta:0.000}");
+        }
+        else if (delta < -deadzone)
+        {
+            float scaled = Mathf.Clamp01((-delta) / scaleDivisor);
+            ApplyReward(
+                runner,
+                null,
+                RewardEvent.ExitApproachRegression,
+                runnerPolicy.ExitApproachPenalty * scaled,
+                stepId,
+                elapsedSeconds,
+                $"exit_regress_delta={delta:0.000}");
+        }
+    }
+
+    public void ApplySentinelIdlePenalty(
+        SentinelAgent sentinel,
+        float speed,
+        float nearestRunnerDistance,
+        float idleDistanceThreshold,
+        int stepId,
+        float elapsedSeconds)
+    {
+        if (sentinel == null || !sentinel.IsAlive)
+        {
+            return;
+        }
+
+        bool isIdle = speed < 0.3f;
+        bool isFarFromRunner = nearestRunnerDistance > idleDistanceThreshold;
+        if (isIdle && isFarFromRunner)
+        {
+            ApplyReward(
+                sentinel,
+                null,
+                RewardEvent.SentinelIdlePenalty,
+                sentinelPolicy.IdlePenalty,
+                stepId,
+                elapsedSeconds,
+                $"idle;speed={speed:0.000};runner_dist={nearestRunnerDistance:0.00}");
         }
     }
 
@@ -918,6 +987,9 @@ public class RewardEngine : MonoBehaviour
             RewardEvent.OrbitStallPenalty,
             RewardEvent.WallLoopPenalty,
             RewardEvent.ClusterPenalty,
+            RewardEvent.ExitApproachProgress,
+            RewardEvent.ExitApproachRegression,
+            RewardEvent.SentinelIdlePenalty,
         };
 
         List<string> parts = new List<string>(eventKeys.Length);

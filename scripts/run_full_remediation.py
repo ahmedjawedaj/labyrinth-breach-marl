@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run full post-audit remediation pipeline in strict order."""
+"""Run the canonical publication training, evaluation, and ablation pipeline."""
 
 from __future__ import annotations
 
@@ -9,150 +9,122 @@ import sys
 from pathlib import Path
 
 
-def run(root: Path, command: list[str]) -> int:
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def run(command: list[str]) -> int:
     print("\n>>>", " ".join(command))
-    return subprocess.run(command, cwd=root).returncode
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--results-dir", default="results")
-    parser.add_argument("--allow-cpu", action="store_true")
-    parser.add_argument("--no-graphics", action="store_true")
-    parser.add_argument("--timeout-wait", type=int, default=120)
-    parser.add_argument("--skip-training-matrix", action="store_true")
-    parser.add_argument("--skip-seen-unseen", action="store_true")
-    parser.add_argument("--skip-memory-ablation", action="store_true")
-    parser.add_argument("--skip-reward-ablation", action="store_true")
-    parser.add_argument("--skip-wall-impact", action="store_true")
-    parser.add_argument("--skip-metadata-repair", action="store_true")
-    return parser.parse_args()
-
-
-def maybe_flag(args: argparse.Namespace, name: str) -> list[str]:
-    return [name] if getattr(args, name.lstrip("-").replace("-", "_")) else []
+    return subprocess.run(command, cwd=ROOT).returncode
 
 
 def main() -> int:
-    args = parse_args()
-    root = Path(__file__).resolve().parents[1]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--env", required=True, help="Unity standalone executable or .app path.")
+    parser.add_argument("--training-results-dir", default="results")
+    parser.add_argument("--evaluation-results-dir", default="results/publication_eval_official")
+    parser.add_argument("--ablation-results-root", default="results/ablations")
+    parser.add_argument("--analysis-output-root", default="results/official_summary/ablations")
+    parser.add_argument("--allow-cpu", action="store_true")
+    parser.add_argument("--no-graphics", action="store_true")
+    parser.add_argument("--skip-training", action="store_true")
+    parser.add_argument("--skip-evaluation", action="store_true")
+    parser.add_argument("--skip-ablations", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
 
-    if not args.skip_metadata_repair:
-        rc = run(
-            root,
-            [
-                sys.executable,
-                "scripts/repair_metadata_snapshots.py",
-                "--results-dir",
-                args.results_dir,
-                "--strict",
-            ],
-        )
-        if rc != 0:
-            return rc
+    runtime = ["--env", args.env]
+    if args.allow_cpu:
+        runtime.append("--allow-cpu")
+    if args.no_graphics:
+        runtime.append("--no-graphics")
 
-    if not args.skip_training_matrix:
-        training_cmd = [
+    preflights = [
+        [sys.executable, "scripts/pretraining_implementation_audit.py"],
+        [sys.executable, "scripts/validate_training_budgets.py"],
+        [sys.executable, "scripts/validate_evaluation_controls.py"],
+    ]
+    if not args.dry_run:
+        for command in preflights:
+            if run(command) != 0:
+                return 2
+
+    if not args.skip_training:
+        command = [
             sys.executable,
             "scripts/run_multiseed_curriculum.py",
             "--matrix-manifest",
             "configs/experiment_manifests/official_curriculum_matrix.yaml",
             "--results-dir",
-            args.results_dir,
-            "--force",
-            *maybe_flag(args, "--no-graphics"),
+            args.training_results_dir,
+            "--resume-completed",
+            *runtime,
         ]
-        rc = run(root, training_cmd)
-        if rc != 0:
-            return rc
+        if args.dry_run:
+            print("\n>>>", " ".join(command))
+        elif run(command) != 0:
+            return 2
 
-    if not args.skip_seen_unseen:
-        seen_unseen_cmd = [
+    curve_command = [sys.executable, "scripts/analyze_official_training_curves.py"]
+    if args.dry_run:
+        print("\n>>>", " ".join(curve_command))
+    elif run(curve_command) != 0:
+        return 2
+
+    if not args.skip_evaluation:
+        command = [
             sys.executable,
-            "scripts/run_seen_unseen_eval_matrix.py",
-            "--eval-matrix-manifest",
-            "configs/experiment_manifests/official_seen_unseen_eval_matrix.yaml",
-            "--results-dir",
-            args.results_dir,
+            "scripts/run_publication_eval_matrix.py",
             "--source-results-dir",
-            args.results_dir,
-            "--timeout-wait",
-            str(args.timeout_wait),
-            *maybe_flag(args, "--allow-cpu"),
-            *maybe_flag(args, "--no-graphics"),
+            args.training_results_dir,
+            "--results-dir",
+            args.evaluation_results_dir,
+            "--resume-completed",
+            *runtime,
         ]
-        rc = run(root, seen_unseen_cmd)
-        if rc != 0:
-            return rc
+        if args.dry_run:
+            print("\n>>>", " ".join(command))
+        elif run(command) != 0:
+            return 2
 
-    if not args.skip_memory_ablation:
-        memory_cmd = [
+    if not args.skip_ablations:
+        command = [
             sys.executable,
-            "scripts/run_memory_ablation.py",
-            "--matrix-manifest",
-            "configs/experiment_manifests/official_memory_ablation_matrix.yaml",
-            "--timeout-wait",
-            str(args.timeout_wait),
-            *maybe_flag(args, "--allow-cpu"),
-            *maybe_flag(args, "--no-graphics"),
+            "scripts/run_publication_ablation_suite.py",
+            "--training-results-dir",
+            args.training_results_dir,
+            "--full-eval-results-dir",
+            args.evaluation_results_dir,
+            "--ablation-results-root",
+            args.ablation_results_root,
+            "--analysis-output-root",
+            args.analysis_output_root,
+            "--resume-completed",
+            *runtime,
         ]
-        rc = run(root, memory_cmd)
-        if rc != 0:
-            return rc
+        if args.dry_run:
+            print("\n>>>", " ".join(command))
+        elif run(command) != 0:
+            return 2
 
-    if not args.skip_reward_ablation:
-        reward_cmd = [
-            sys.executable,
-            "scripts/run_reward_config_ablation.py",
-            *maybe_flag(args, "--allow-cpu"),
-            *maybe_flag(args, "--no-graphics"),
-        ]
-        rc = run(root, reward_cmd)
-        if rc != 0:
-            return rc
-
-    if not args.skip_wall_impact:
-        wall_cmd = [
-            sys.executable,
-            "scripts/run_dynamic_wall_impact.py",
-            *maybe_flag(args, "--allow-cpu"),
-            *maybe_flag(args, "--no-graphics"),
-        ]
-        rc = run(root, wall_cmd)
-        if rc != 0:
-            return rc
-
-    # Final strict checks and paper outputs.
-    rc = run(
-        root,
+    final_checks = [
         [
             sys.executable,
             "scripts/seed_completion_tracker.py",
-            "--training-matrix-manifest",
-            "configs/experiment_manifests/official_curriculum_matrix.yaml",
-            "--eval-matrix-manifest",
-            "configs/experiment_manifests/official_seen_unseen_eval_matrix.yaml",
             "--results-dir",
-            args.results_dir,
-            "--output-dir",
-            args.results_dir,
+            args.training_results_dir,
+            "--eval-results-dir",
+            args.evaluation_results_dir,
         ],
-    )
-    if rc != 0:
-        return rc
-
-    rc = run(
-        root,
-        [
-            sys.executable,
-            "scripts/build_paper_ready_outputs.py",
-            "--experiment-family",
-            "LB_seen_unseen_official_v1",
-            "--results-dir",
-            args.results_dir,
-        ],
-    )
-    return rc
+        [sys.executable, "scripts/audit_publication_readiness.py"],
+    ]
+    if args.dry_run:
+        for command in final_checks:
+            print("\n>>>", " ".join(command))
+        return 0
+    for command in final_checks:
+        if run(command) != 0:
+            return 2
+    return 0
 
 
 if __name__ == "__main__":

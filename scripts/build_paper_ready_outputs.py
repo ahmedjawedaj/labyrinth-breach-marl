@@ -101,12 +101,12 @@ def main() -> int:
             "unseen_survival_time": safe_float(unseen_kpi.get("runner_survival_time_seconds_mean")),
             "seen_path_ratio": safe_float((seen_kpi.get("path_efficiency") or {}).get("shortest_path_vs_actual_ratio_proxy")),
             "unseen_path_ratio": safe_float((unseen_kpi.get("path_efficiency") or {}).get("shortest_path_vs_actual_ratio_proxy")),
-            "seen_pincer_rate": safe_float((seen_kpi.get("coordination") or {}).get("pincer_rate")),
-            "unseen_pincer_rate": safe_float((unseen_kpi.get("coordination") or {}).get("pincer_rate")),
-            "seen_corridor_rate": safe_float((seen_kpi.get("coordination") or {}).get("corridor_block_rate")),
-            "unseen_corridor_rate": safe_float((unseen_kpi.get("coordination") or {}).get("corridor_block_rate")),
-            "seen_exit_denial_rate": safe_float((seen_kpi.get("coordination") or {}).get("exit_denial_rate")),
-            "unseen_exit_denial_rate": safe_float((unseen_kpi.get("coordination") or {}).get("exit_denial_rate")),
+            "seen_pincer_episode_rate": safe_float((seen_kpi.get("coordination") or {}).get("pincer_episode_rate")),
+            "unseen_pincer_episode_rate": safe_float((unseen_kpi.get("coordination") or {}).get("pincer_episode_rate")),
+            "seen_corridor_block_episode_rate": safe_float((seen_kpi.get("coordination") or {}).get("corridor_block_episode_rate")),
+            "unseen_corridor_block_episode_rate": safe_float((unseen_kpi.get("coordination") or {}).get("corridor_block_episode_rate")),
+            "seen_exit_denial_episode_rate": safe_float((seen_kpi.get("coordination") or {}).get("exit_denial_episode_rate")),
+            "unseen_exit_denial_episode_rate": safe_float((unseen_kpi.get("coordination") or {}).get("exit_denial_episode_rate")),
         }
         seed_rows.append(row)
         generalization_rows.append(
@@ -119,9 +119,9 @@ def main() -> int:
                 "capture_time_delta_full": row["unseen_full_capture_time"] - row["seen_full_capture_time"],
                 "survival_time_delta_runner": row["unseen_survival_time"] - row["seen_survival_time"],
                 "path_efficiency_delta": row["unseen_path_ratio"] - row["seen_path_ratio"],
-                "coordination_pincer_delta": row["unseen_pincer_rate"] - row["seen_pincer_rate"],
-                "coordination_corridor_delta": row["unseen_corridor_rate"] - row["seen_corridor_rate"],
-                "coordination_exit_denial_delta": row["unseen_exit_denial_rate"] - row["seen_exit_denial_rate"],
+                "coordination_pincer_delta": row["unseen_pincer_episode_rate"] - row["seen_pincer_episode_rate"],
+                "coordination_corridor_delta": row["unseen_corridor_block_episode_rate"] - row["seen_corridor_block_episode_rate"],
+                "coordination_exit_denial_delta": row["unseen_exit_denial_episode_rate"] - row["seen_exit_denial_episode_rate"],
             }
         )
 
@@ -135,8 +135,8 @@ def main() -> int:
         "unseen_survival_time",
         "seen_path_ratio",
         "unseen_path_ratio",
-        "seen_pincer_rate",
-        "unseen_pincer_rate",
+        "seen_pincer_episode_rate",
+        "unseen_pincer_episode_rate",
     ]
     multiseed_rows: list[dict] = []
     for field in summary_fields:
@@ -216,9 +216,9 @@ def main() -> int:
 
     # Coordination plots
     plt.figure(figsize=(9, 5))
-    plt.plot(seeds, [row["seen_pincer_rate"] for row in seed_rows], marker="o", label="pincer_rate")
-    plt.plot(seeds, [row["seen_corridor_rate"] for row in seed_rows], marker="o", label="corridor_control")
-    plt.plot(seeds, [row["seen_exit_denial_rate"] for row in seed_rows], marker="o", label="exit_denial")
+    plt.plot(seeds, [row["seen_pincer_episode_rate"] for row in seed_rows], marker="o", label="pincer episode rate")
+    plt.plot(seeds, [row["seen_corridor_block_episode_rate"] for row in seed_rows], marker="o", label="corridor-block episode rate")
+    plt.plot(seeds, [row["seen_exit_denial_episode_rate"] for row in seed_rows], marker="o", label="exit-denial episode rate")
     plt.title("Coordination KPIs by Seed (Seen)")
     plt.xlabel("Seed")
     plt.ylabel("Rate")

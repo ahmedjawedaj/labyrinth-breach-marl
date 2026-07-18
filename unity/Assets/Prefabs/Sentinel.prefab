@@ -164,7 +164,7 @@ MonoBehaviour:
     VectorActionDescriptions: []
     VectorActionSpaceType: 1
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 5022602860645237092, guid: 8b6aec2b13e862e0e99d2abe42496fb4, type: 3}
+  m_Model: {fileID: 5022602860645237092, guid: fe9a92dcda1a84016ac51fa5a70fc571, type: 3}
   m_InferenceDevice: 0
   m_BehaviorType: 2
   m_BehaviorName: Sentinel

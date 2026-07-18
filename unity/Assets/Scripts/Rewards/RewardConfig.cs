@@ -31,6 +31,9 @@ public struct RewardConfig
     public float RunnerThreatRadius;
     public float RunnerExplorationVisitBonus;
     public float RunnerOrbitStallPenalty;
+    public float RunnerExitApproachBonus;
+    public float RunnerExitApproachPenalty;
+    public float SentinelIdlePenalty;
     public bool TrapAwareEnabled;
     public float TrapPincerFormationBonus;
     public float TrapOppositeSideEnclosureBonus;
@@ -68,6 +71,9 @@ public struct RewardConfig
             RunnerThreatRadius = 5f,
             RunnerExplorationVisitBonus = 0.0012f,
             RunnerOrbitStallPenalty = -0.003f,
+            RunnerExitApproachBonus = 0f,
+            RunnerExitApproachPenalty = 0f,
+            SentinelIdlePenalty = 0f,
             TrapAwareEnabled = false,
             TrapPincerFormationBonus = 0f,
             TrapOppositeSideEnclosureBonus = 0f,
@@ -173,6 +179,18 @@ public static class RewardConfigLoader
             values,
             "runner.orbit_stall_penalty",
             config.RunnerOrbitStallPenalty);
+        config.RunnerExitApproachBonus = GetFloat(
+            values,
+            "runner.exit_approach_bonus",
+            config.RunnerExitApproachBonus);
+        config.RunnerExitApproachPenalty = GetFloat(
+            values,
+            "runner.exit_approach_penalty",
+            config.RunnerExitApproachPenalty);
+        config.SentinelIdlePenalty = GetFloat(
+            values,
+            "sentinel.idle_penalty",
+            config.SentinelIdlePenalty);
         config.TrapAwareEnabled = GetBool(values, "trap_aware.enabled", config.TrapAwareEnabled);
         config.TrapPincerFormationBonus = GetFloat(
             values,
@@ -212,19 +230,7 @@ public static class RewardConfigLoader
             return configPath;
         }
 
-        string projectRootPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", configPath));
-        if (File.Exists(projectRootPath))
-        {
-            return projectRootPath;
-        }
-
-        string repoRootPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", configPath));
-        if (File.Exists(repoRootPath))
-        {
-            return repoRootPath;
-        }
-
-        return projectRootPath;
+        return LabyrinthPathResolver.ResolvePath(configPath);
     }
 
     private static Dictionary<string, string> ParseYamlLikeFile(string path)

@@ -29,15 +29,19 @@ This file lists the active source paths that should be treated as canonical.
 - `scripts/summarize_eval_kpis.py`
 - `scripts/validate_run_provenance.py`
 - `scripts/seed_completion_tracker.py`
+- `scripts/run_publication_eval_matrix.py`
+- `scripts/audit_publication_eval_matrix.py`
+- `scripts/audit_publication_readiness.py`
 
 ## Results
 
 - raw run artifacts: `results/<run_id>/`
 - raw logs: `results/<run_id>/logs/`
 - run metadata: `results/<run_id>/metadata/`
-- training status: `results/<run_id>/run_logs/`
+- training status: `results/<run_id>/metadata/training_status.json`
 - checkpoints and ONNX exports: `results/<run_id>/Runner/`, `results/<run_id>/Sentinel/`
-- official family aggregate summaries: `results/LB_3v2_seen_unseen_eval_official_v1/`
+- official publication evaluations: `results/publication_eval_official/`
+- official training/evaluation completion audit: `results/LB_3v2_curriculum_official_v1/completion/`
 - compact mirror summaries: `results/official_summary/`
 
 ## Noncanonical Paths
@@ -47,5 +51,6 @@ This file lists the active source paths that should be treated as canonical.
 - `unity/Scripts/`
 - `unity/Materials/`
 - `Labyrinth-Breach/New Unity Project/`
+- `results/LB_3v2_seen_unseen_eval_official_v1/`
 
 These paths are legacy or archival and should not be treated as the active source of truth.

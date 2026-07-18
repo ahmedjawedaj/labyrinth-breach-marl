@@ -23,6 +23,9 @@ public static class RewardEvent
     public const string EvadeProgress = "evade_progress";
     public const string ThreatApproachPenalty = "threat_approach_penalty";
     public const string OrbitStallPenalty = "orbit_stall_penalty";
+    public const string ExitApproachProgress = "exit_approach_progress";
+    public const string ExitApproachRegression = "exit_approach_regression";
+    public const string SentinelIdlePenalty = "sentinel_idle_penalty";
 
     public static string CategoryFor(string eventName)
     {
@@ -47,6 +50,8 @@ public static class RewardEvent
             case ChaseRegression:
             case ThreatApproachPenalty:
             case OrbitStallPenalty:
+            case ExitApproachRegression:
+            case SentinelIdlePenalty:
                 return "penalty";
             case SurvivalReward:
             case ExplorationBonus:
@@ -54,6 +59,7 @@ public static class RewardEvent
             case TeamSeparationShaping:
             case ChaseProgress:
             case EvadeProgress:
+            case ExitApproachProgress:
                 return "shaping";
             default:
                 return "event";

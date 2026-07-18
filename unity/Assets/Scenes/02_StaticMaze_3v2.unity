@@ -479,6 +479,12 @@ MonoBehaviour:
   verifyResetIntegrity: 1
   mazeGenerator: {fileID: 6002}
   dynamicWallController: {fileID: 0}
+  loadCurriculumConfigOnBeginEpisode: 1
+  curriculumConfigPath: ../configs/curriculum_configs/curriculum_3v2_full_v1.yaml
+  runtimeStageOverridePath: ../configs/runtime_overrides/active_stage.txt
+  runtimeCurriculumOverridePath: ../configs/runtime_overrides/active_curriculum_config.txt
+  runtimeRuleOverridePath: ../configs/runtime_overrides/active_rule_config.txt
+  curriculumStageIndex: -1
   observationPositionScale: 26
   observationMaxSpeed: 6
   rayMaxDistance: 12

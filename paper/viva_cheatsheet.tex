@@ -26,8 +26,8 @@
 
 \begin{document}
 \begin{center}
-{\Large\bfseries Labyrinth Breach -- Viva Cheatsheet} \\[2pt]
-{\small AI641 -- AI for Robotics | MS AI, LUMS | May 2025}
+{\Large\bfseries Labyrinth Breach -- Legacy Viva Cheatsheet} \\[2pt]
+{\small AI641 -- AI for Robotics | MS AI, LUMS | May 2025 | Superseded by journal draft}
 \end{center}
 \vspace{-4pt}
 
@@ -419,18 +419,17 @@ Coordination metrics & \texttt{results/*/kpis/coordination\_metrics.csv} \\
 \toprule
 Metric & Seen & Unseen \\
 \midrule
-Sentinel win rate & 0.620 & 0.603 \\
-Runner win rate & 0.380 & 0.397 \\
-1st capture (s) & 17.15 & 9.68 \\
-2nd capture (s) & 37.84 & 24.55 \\
-Runner escape frac & 0.260 & 0.268 \\
-Timeout survival & 0.120 & 0.129 \\
+Completed episodes & 12 & 106 \\
+Sentinel win rate & 0.750 & 0.689 \\
+Runner win rate & 0.250 & 0.311 \\
+Escape rate & 0.000 & 0.255 \\
+Full capture (s) & 13.33 & 21.04 \\
 \bottomrule
 \end{tabular}
 
-\textbf{Key takeaway:} Win rates are stable (1.7pt drop). Capture timing shifts significantly ($-$7.5s first, $-$13.3s second). Policies transfer but are topology-sensitive.
+\textbf{Key takeaway:} This is one-checkpoint diagnostic evidence. Five unseen seed configurations reused one topology and changed other dynamics, so the seen/unseen difference is not a topology effect.
 
-\textbf{Safe claim:} ``The learned policies transfer across maze layouts while remaining sensitive to topology.''
+\textbf{Safe claim:} ``The legacy checkpoint executes in both scenes, but controlled multi-seed topology generalization remains untested.''
 
 \textbf{Unsafe claim (avoid):} ``The agents have learned spatial reasoning'' or ``The agents intentionally coordinate.''
 

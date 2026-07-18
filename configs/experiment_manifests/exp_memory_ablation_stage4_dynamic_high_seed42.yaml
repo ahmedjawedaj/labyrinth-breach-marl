@@ -2,7 +2,7 @@ run_id: LB_memory_ablation_seed42_stage4_dynamic_high_v1
 seed: 42
 scene: 03_DynamicMaze_3v2
 env_config: configs/env_configs/env_dynamicmaze_v1.yaml
-reward_config: configs/reward_configs/reward_dynamicmaze_memory_v4.yaml
+reward_config: configs/reward_configs/reward_v5_active_agents.yaml
 trainer_config: configs/trainer_configs/ppo_dynamicmaze_3v2.yaml
 curriculum_config: configs/curriculum_configs/curriculum_memory_ablation_on_v1.yaml
 curriculum_stage: ablation_stage4_dynamic_high

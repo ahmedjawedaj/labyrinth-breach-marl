@@ -6,7 +6,9 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -56,11 +58,20 @@ def main() -> int:
 
     sentinel_prefab = read(unity_root / "Assets" / "Prefabs" / "Sentinel.prefab")
     runner_prefab = read(unity_root / "Assets" / "Prefabs" / "Runner.prefab")
+    base_agent_text = read(scripts_root / "Agents" / "BaseAgent.cs")
     checks.append(check(has_all(sentinel_prefab, ["m_BehaviorName: Sentinel", "TeamId: 0"]), "Sentinel behavior/team", "Sentinel.prefab"))
     checks.append(check(has_all(runner_prefab, ["m_BehaviorName: Runner", "TeamId: 1"]), "Runner behavior/team", "Runner.prefab"))
-    checks.append(check("m_BehaviorType: 0" in sentinel_prefab and "m_BehaviorType: 0" in runner_prefab, "BehaviorType training", "0=Default"))
+    runtime_training_switch = has_all(
+        base_agent_text,
+        ["Academy.Instance.IsCommunicatorOn", "BehaviorType.Default", "BehaviorType.InferenceOnly"],
+    )
+    checks.append(check(runtime_training_switch, "Runtime training mode switch", "BaseAgent selects Default when the Python communicator is active"))
     checks.append(check("DecisionPeriod: 2" in sentinel_prefab and "DecisionPeriod: 2" in runner_prefab, "DecisionRequester period", "DecisionPeriod=2"))
-    checks.append(check("m_Model: {fileID: 0}" in sentinel_prefab and "m_Model: {fileID: 0}" in runner_prefab, "No stale prefab model refs", "m_Model null"))
+    inference_models_assigned = all(
+        "m_Model: {fileID: 0}" not in prefab and "m_BehaviorType: 2" in prefab
+        for prefab in (sentinel_prefab, runner_prefab)
+    )
+    checks.append(check(inference_models_assigned, "Standalone inference models assigned", "Prefabs retain ONNX models while communicator mode switches to training"))
 
     controller_text = read(scripts_root / "Environment" / "PursuitEvasionEnvController.cs")
     reward_text = read(scripts_root / "Rewards" / "RewardEngine.cs")
@@ -70,14 +81,18 @@ def main() -> int:
     step_logger = read(scripts_root / "Logging" / "StepLogger.cs")
     replay_logger = read(scripts_root / "Logging" / "ReplayEventExporter.cs")
     memory_text = read(scripts_root / "Sensors" / "LastKnownPositionMemory.cs")
+    maze_generator_text = read(scripts_root / "Environment" / "MazeGenerator.cs")
     summarize_kpi = read(root / "scripts" / "summarize_eval_kpis.py")
     artifact_validation = read(root / "scripts" / "artifact_validation.py")
+    training_wrapper = read(root / "scripts" / "train_with_metadata.py")
+    curriculum_wrapper = read(root / "scripts" / "run_multiseed_curriculum.py")
+    evaluation_wrapper = read(root / "scripts" / "evaluate_policy.py")
 
     checks.append(check("ResetEpisode" in controller_text or "BeginEpisode" in controller_text, "Environment reset flow present", "PursuitEvasionEnvController.cs"))
     checks.append(check("capture" in controller_text.lower(), "Capture logic present", "PursuitEvasionEnvController.cs"))
     checks.append(check("exit" in controller_text.lower(), "Exit logic present", "PursuitEvasionEnvController.cs"))
     checks.append(check("DynamicWallController" in controller_text or "dynamic wall" in controller_text.lower(), "Dynamic wall logic wired", "PursuitEvasionEnvController.cs"))
-    checks.append(check("CollectObservations" in read(scripts_root / "Agents" / "BaseAgent.cs"), "Observation pipeline present", "BaseAgent.cs"))
+    checks.append(check("CollectObservations" in base_agent_text, "Observation pipeline present", "BaseAgent.cs"))
     memory_off_configs = [
         root / "configs" / "env_configs" / "asymmetry_config_memory_off.yaml",
         root / "configs" / "env_configs" / "maze_static_config_memory_off.yaml",
@@ -87,6 +102,24 @@ def main() -> int:
     memory_toggle_ok = "LastKnownPositionMemory" in memory_text and all(path.exists() and "use_memory: false" in read(path) for path in memory_off_configs)
     checks.append(check(memory_toggle_ok, "Memory toggle support present", "LastKnownPositionMemory.cs + *_memory_off.yaml configs"))
     checks.append(check("LoadConfig" in reward_text or "RewardConfig" in reward_text, "Reward config load path present", "RewardEngine.cs"))
+    topology_build_log = root / "builds" / "macos" / "unity_build.log"
+    topology_log_text = read(topology_build_log) if topology_build_log.exists() else ""
+    topology_seeds = [101, 202, 303, 404, 505]
+    topology_validation_ok = (
+        has_all(
+            maze_generator_text,
+            ["BuildProceduralLayout", "TryValidateProceduralLayout", "SetTopologySeed", "placementSeed"],
+        )
+        and has_all(episode_logger, ["maze_layout_id", "maze_topology_seed"])
+        and all(f"Validated held-out topology seed={seed}" in topology_log_text for seed in topology_seeds)
+    )
+    checks.append(
+        check(
+            topology_validation_ok,
+            "Distinct held-out topology validation",
+            "MazeGenerator invariants + episode provenance + Unity build signatures for seeds 101/202/303/404/505",
+        )
+    )
     checks.append(check("TacticalEventTracker" in trap_text and "TryFindExitDenial" in trap_text, "Trap-aware metrics wired", "TrapEventDetector.cs"))
     checks.append(
         check(
@@ -98,12 +131,66 @@ def main() -> int:
     checks.append(check("config_snapshots" in read(root / "scripts" / "save_run_metadata.py"), "Metadata snapshot logic present", "save_run_metadata.py"))
     checks.append(check("validate_artifacts" in artifact_validation, "Artifact validation logic present", "artifact_validation.py"))
     checks.append(check("eval_kpi_summary.csv" in summarize_kpi and "eval_kpi_summary.json" in summarize_kpi, "KPI scripts outputs present", "summarize_eval_kpis.py"))
+    clean_retry_ok = has_all(
+        training_wrapper,
+        ["clean_forced_run_directory", "shutil.rmtree(run_dir)", 'status="running"'],
+    )
+    checks.append(
+        check(
+            clean_retry_ok,
+            "Forced retry starts with clean artifacts",
+            "train_with_metadata removes the target run directory before recreating metadata/log routing",
+        )
+    )
+    clean_eval_retry_ok = has_all(
+        evaluation_wrapper,
+        ["prepare_evaluation_output", "shutil.rmtree(run_dir)", "--force-output"],
+    )
+    checks.append(
+        check(
+            clean_eval_retry_ok,
+            "Evaluation retry starts with clean artifacts",
+            "evaluate_policy refuses existing outputs unless explicit force cleanup is requested",
+        )
+    )
+    budget_ok, budget_output = cli_check([sys.executable, "scripts/validate_training_budgets.py"], root)
+    checks.append(
+        check(
+            budget_ok,
+            "Role training budgets are synchronized",
+            budget_output[:300] if budget_output else "training budget audit passed",
+        )
+    )
+    checks.append(
+        check(
+            has_all(curriculum_wrapper, ["config_snapshots_match", "sha256_file(source)", "sha256_file(snapshot)"]),
+            "Completed-run resume verifies config hashes",
+            "run_multiseed_curriculum compares current sources and saved snapshots before reuse",
+        )
+    )
 
-    # Runtime tool availability checks (best-effort from CLI).
-    mlagents_ok, mlagents_out = cli_check(["mlagents-learn", "--help"], root)
+    # Runtime tool availability checks support the repository's documented macOS setup.
+    mlagents_candidates = [
+        Path(candidate) for candidate in [
+            shutil.which("mlagents-learn"),
+            "/opt/anaconda3/envs/labyrinth-breach/bin/mlagents-learn",
+            str(Path.home() / "anaconda3/envs/labyrinth-breach/bin/mlagents-learn"),
+            "/home/code/anaconda3/envs/labyrinth-breach/bin/mlagents-learn",
+        ] if candidate
+    ]
+    mlagents_cli = next((candidate for candidate in mlagents_candidates if candidate.exists()), None)
+    mlagents_ok, mlagents_out = cli_check([str(mlagents_cli), "--help"], root) if mlagents_cli else (False, "not found")
     checks.append(check(mlagents_ok, "ML-Agents CLI available", mlagents_out[:200] if mlagents_out else "ok"))
-    unity_ok, unity_out = cli_check(["bash", "-lc", "which Unity || which unity-editor"], root)
-    checks.append(check(unity_ok, "Unity CLI discoverable from shell", unity_out or "not found in PATH"))
+    unity_candidates = [
+        Path(candidate) for candidate in [
+            shutil.which("Unity"),
+            shutil.which("unity-editor"),
+            "/Applications/Unity/Hub/Editor/6000.0.40f1/Unity.app/Contents/MacOS/Unity",
+        ] if candidate
+    ]
+    unity_candidates.extend(sorted(Path("/Applications/Unity/Hub/Editor").glob("*/Unity.app/Contents/MacOS/Unity")))
+    unity_cli = next((candidate for candidate in unity_candidates if candidate.exists()), None)
+    checks.append(check(unity_cli is not None, "Unity CLI available", str(unity_cli) if unity_cli else "not found"))
 
     passed = sum(1 for item in checks if item["status"] == "PASS")
     failed = len(checks) - passed

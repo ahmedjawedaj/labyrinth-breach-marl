@@ -91,10 +91,10 @@ def derive_extra_metrics(logs_dir: Path) -> dict:
 
     reward_breakdown: dict[str, float] = {}
     for row in reward_rows:
-        team = (row.get("team") or "unknown").strip() or "unknown"
-        reason = (row.get("reason") or "unknown").strip() or "unknown"
-        key = f"{team}:{reason}"
-        reward_breakdown[key] = reward_breakdown.get(key, 0.0) + safe_float(row, "delta")
+        category = (row.get("category") or "unknown").strip() or "unknown"
+        event_name = (row.get("event_name") or "unknown").strip() or "unknown"
+        key = f"{category}:{event_name}"
+        reward_breakdown[key] = reward_breakdown.get(key, 0.0) + safe_float(row, "total")
 
     return {
         "exploration_time_proxy_seconds": exploration_time_proxy,
@@ -226,6 +226,7 @@ def main() -> int:
                 command.append("--no-graphics")
             if deterministic_expected:
                 command.append("--deterministic")
+            command.append("--forbid-fallback-log-copy")
 
             print(f"\n=== Seen/Unseen eval: seed={seed}, split={split_id}, run={eval_run_id} ===")
             print(" ".join(command))

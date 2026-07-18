@@ -41,6 +41,7 @@ public class PursuitEvasionEnvController : MonoBehaviour
     [SerializeField] private string runtimeStageOverridePath = "../configs/runtime_overrides/active_stage.txt";
     [SerializeField] private string runtimeCurriculumOverridePath = "../configs/runtime_overrides/active_curriculum_config.txt";
     [SerializeField] private string runtimeRuleOverridePath = "../configs/runtime_overrides/active_rule_config.txt";
+    [SerializeField] private string runtimeRewardOverridePath = "../configs/runtime_overrides/active_reward_config.txt";
     [SerializeField] private int curriculumStageIndex = -1;
 
     [Header("Observation Settings")]
@@ -69,7 +70,7 @@ public class PursuitEvasionEnvController : MonoBehaviour
 
     [Header("Rewards")]
     [SerializeField] private RewardEngine rewardEngine;
-    [SerializeField] private string rewardConfigPath = "../configs/reward_configs/reward_shared_basic_v1.yaml";
+    [SerializeField] private string rewardConfigPath = "../configs/reward_configs/reward_v5_active_agents.yaml";
     [SerializeField] private float survivalRewardIntervalSeconds = 1f;
     [SerializeField] private float wallLoopPenaltyCheckIntervalSeconds = 0.5f;
     [SerializeField] private float wallLoopLowDisplacementThreshold = 0.08f;
@@ -82,8 +83,8 @@ public class PursuitEvasionEnvController : MonoBehaviour
     [SerializeField] private float sentinelChaseProgressDeadzone = 0.04f;
     [SerializeField] private int sentinelNonProgressRepeatThreshold = 2;
     [SerializeField] private float sentinelCloseEngagementDistance = 3.25f;
-    [SerializeField] private float sentinelPursuitAssistStrength = 0.55f;
-    [SerializeField] private float runnerEvadeAssistStrength = 0.5f;
+    [SerializeField] private float sentinelPursuitAssistStrength = 0.15f;
+    [SerializeField] private float runnerEvadeAssistStrength = 0.0f;
 
     [Header("Logging")]
     [SerializeField] private StepLogger stepLogger;
@@ -130,6 +131,7 @@ public class PursuitEvasionEnvController : MonoBehaviour
     private readonly Dictionary<string, float> sentinelLastTeammateDistance = new Dictionary<string, float>();
     private readonly Dictionary<string, int> sentinelNonProgressCounts = new Dictionary<string, int>();
     private readonly Dictionary<string, float> runnerLastThreatDistance = new Dictionary<string, float>();
+    private readonly Dictionary<string, float> runnerLastExitDistance = new Dictionary<string, float>();
     private readonly Dictionary<string, Vector3> lastPositionByAgent = new Dictionary<string, Vector3>();
     private readonly Dictionary<string, float> travelDistanceByAgent = new Dictionary<string, float>();
     private readonly Dictionary<string, int> wallLoopRepeatCounts = new Dictionary<string, int>();
@@ -145,6 +147,8 @@ public class PursuitEvasionEnvController : MonoBehaviour
     public bool ResetIntegrityPassed => resetIntegrityPassed;
     public ObservationConfig ActiveObservationConfig => activeObservationConfig;
     public string ActiveCurriculumStageId => hasActiveCurriculumStage ? activeCurriculumStage.StageId : string.Empty;
+    public string ActiveMazeLayoutId => mazeGenerator != null ? mazeGenerator.ActiveLayoutId : string.Empty;
+    public int ActiveMazeTopologySeed => mazeGenerator != null ? mazeGenerator.TopologySeed : -1;
     public int CurriculumStageIndex => curriculumStageIndex;
     public float ObservationPositionScale => observationPositionScale;
     public float ObservationMaxSpeed => observationMaxSpeed;
@@ -666,6 +670,7 @@ public class PursuitEvasionEnvController : MonoBehaviour
         }
 
         LoadAndApplyRuleConfig();
+        ApplyRuntimeRewardOverrideIfPresent();
 
         if (mazeGenerator != null)
         {
@@ -713,10 +718,10 @@ public class PursuitEvasionEnvController : MonoBehaviour
         ResetAgents();
         EnforceMinimumStartSeparation();
         InitializeTerminalArmingMetrics();
+        resetIntegrityPassed = ValidateResetIntegrity();
         ResetMazeCoverageMetrics();
         RefreshWallLoopPositionMemory();
         ResetTrackingDistanceMemory();
-        resetIntegrityPassed = ValidateResetIntegrity();
         BeginLoggers();
 
         if (logEpisodeEvents)
@@ -844,6 +849,8 @@ public class PursuitEvasionEnvController : MonoBehaviour
         activeObservationConfig = activeRuleConfig.ObservationConfig;
         sentinelRayCount = Mathf.Max(0, activeObservationConfig.SentinelRayCount);
         runnerRayCount = Mathf.Max(0, activeObservationConfig.RunnerRayCount);
+        sentinelPursuitAssistStrength = Mathf.Clamp01(activeRuleConfig.SentinelPursuitAssistStrength);
+        runnerEvadeAssistStrength = Mathf.Clamp01(activeRuleConfig.RunnerEvadeAssistStrength);
         wallShiftIntervalSeconds = activeRuleConfig.DynamicWallsEnabled ? activeRuleConfig.WallShiftIntervalSeconds : 0f;
         spawnManager.SetAgentDynamics(activeRuleConfig.SentinelSpeed, activeRuleConfig.RunnerSpeed);
         if (mazeGenerator != null)
@@ -866,6 +873,16 @@ public class PursuitEvasionEnvController : MonoBehaviour
     private void ApplyRandomizationControls()
     {
         activeRandomizationConfig = activeRuleConfig.RandomizationConfig;
+
+        // Curriculum stages define the maze progression. Keep their maze seed and
+        // spawn/exit policy authoritative over the broader environment rule file.
+        if (hasActiveCurriculumStage)
+        {
+            activeRandomizationConfig.MazeSeed = activeCurriculumStage.MazeSeed;
+            activeRandomizationConfig.RandomizeSpawnPositions = activeCurriculumStage.RandomizeSpawns;
+            activeRandomizationConfig.RandomizeExitPositions = activeCurriculumStage.RandomizeExits;
+        }
+
         System.Random random = new System.Random(activeRandomizationConfig.Seed + episodeId);
 
         if (activeRandomizationConfig.RandomizeSpeedAsymmetry)
@@ -896,9 +913,9 @@ public class PursuitEvasionEnvController : MonoBehaviour
                 activeRandomizationConfig.WallShiftMaxSeconds);
         }
 
-        if (mazeGenerator != null &&
-            (activeRandomizationConfig.RandomizeSpawnPositions || activeRandomizationConfig.RandomizeExitPositions))
+        if (mazeGenerator != null)
         {
+            mazeGenerator.SetTopologySeed(activeRandomizationConfig.MazeSeed);
             mazeGenerator.ConfigureRandomizationControls(
                 activeRandomizationConfig.MazeSeed + episodeId,
                 activeRandomizationConfig.RandomizeSpawnPositions,
@@ -1022,6 +1039,9 @@ public class PursuitEvasionEnvController : MonoBehaviour
             Debug.Log(
                 $"{curriculumMessage}. Stage {selectedStageIndex}: {activeCurriculumStage.StageId}, " +
                 $"mazeEnabled={activeCurriculumStage.MazeEnabled}, mode={activeCurriculumStage.MazeMode}, " +
+                $"mazeSeed={activeCurriculumStage.MazeSeed}, " +
+                $"randomSpawns={activeCurriculumStage.RandomizeSpawns}, " +
+                $"randomExits={activeCurriculumStage.RandomizeExits}, " +
                 $"dynamicWalls={activeCurriculumStage.DynamicWallsEnabled}, " +
                 $"shiftInterval={activeCurriculumStage.WallShiftIntervalSeconds:0.##}s.",
                 this);
@@ -1070,24 +1090,7 @@ public class PursuitEvasionEnvController : MonoBehaviour
             return string.Empty;
         }
 
-        string resolvedPath = string.Empty;
-        if (Path.IsPathRooted(runtimeStageOverridePath))
-        {
-            resolvedPath = runtimeStageOverridePath;
-        }
-        else
-        {
-            string projectRootCandidate = Path.GetFullPath(Path.Combine(Application.dataPath, "..", runtimeStageOverridePath));
-            if (File.Exists(projectRootCandidate))
-            {
-                resolvedPath = projectRootCandidate;
-            }
-            else
-            {
-                string repoRootCandidate = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", runtimeStageOverridePath));
-                resolvedPath = repoRootCandidate;
-            }
-        }
+        string resolvedPath = LabyrinthPathResolver.ResolvePath(runtimeStageOverridePath);
 
         if (!File.Exists(resolvedPath))
         {
@@ -1109,6 +1112,7 @@ public class PursuitEvasionEnvController : MonoBehaviour
         if (EnvRuleConfigLoader.TryLoad(overrideRulePath, out EnvRuleConfig loadedConfig, out string message))
         {
             activeRuleConfig = loadedConfig;
+            ruleConfigPath = overrideRulePath;
             if (logEpisodeEvents)
             {
                 Debug.Log($"Loaded runtime rule override: {overrideRulePath}. {message}", this);
@@ -1125,6 +1129,15 @@ public class PursuitEvasionEnvController : MonoBehaviour
         return ResolveRuntimeConfigOverridePath(runtimeRuleOverridePath);
     }
 
+    private void ApplyRuntimeRewardOverrideIfPresent()
+    {
+        string overrideRewardPath = ResolveRuntimeConfigOverridePath(runtimeRewardOverridePath);
+        if (!string.IsNullOrWhiteSpace(overrideRewardPath))
+        {
+            rewardConfigPath = overrideRewardPath;
+        }
+    }
+
     private string ResolveRuntimeConfigOverridePath(string overrideFilePath)
     {
         if (string.IsNullOrWhiteSpace(overrideFilePath))
@@ -1132,24 +1145,7 @@ public class PursuitEvasionEnvController : MonoBehaviour
             return string.Empty;
         }
 
-        string resolvedPath = string.Empty;
-        if (Path.IsPathRooted(overrideFilePath))
-        {
-            resolvedPath = overrideFilePath;
-        }
-        else
-        {
-            string projectRootCandidate = Path.GetFullPath(Path.Combine(Application.dataPath, "..", overrideFilePath));
-            if (File.Exists(projectRootCandidate))
-            {
-                resolvedPath = projectRootCandidate;
-            }
-            else
-            {
-                string repoRootCandidate = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", overrideFilePath));
-                resolvedPath = repoRootCandidate;
-            }
-        }
+        string resolvedPath = LabyrinthPathResolver.ResolvePath(overrideFilePath);
 
         if (!File.Exists(resolvedPath))
         {
@@ -1168,7 +1164,7 @@ public class PursuitEvasionEnvController : MonoBehaviour
             return configuredPath;
         }
 
-        return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", configuredPath));
+        return LabyrinthPathResolver.ResolvePath(configuredPath);
     }
 
     private void ApplyAgentRuleOverrides()
@@ -1239,6 +1235,8 @@ public class PursuitEvasionEnvController : MonoBehaviour
         GetAllAgentsForObservation(allAgents);
         EvaluateSentinelTrackingShaping(allAgents);
         EvaluateRunnerThreatShaping(allAgents);
+        EvaluateRunnerExitShaping();
+        EvaluateSentinelIdlePenalties(allAgents);
         EvaluateOrbitStallPenalty();
     }
 
@@ -1479,6 +1477,85 @@ public class PursuitEvasionEnvController : MonoBehaviour
         }
     }
 
+    private void EvaluateRunnerExitShaping()
+    {
+        EnsureRewardEngine();
+        if (rewardEngine == null || !exitWinEnabled)
+        {
+            return;
+        }
+
+        for (int i = 0; i < runners.Count; i++)
+        {
+            RunnerAgent runner = runners[i];
+            if (runner == null || !runner.IsAlive || runner.IsCaptured)
+            {
+                continue;
+            }
+
+            if (!TryGetNearestExitInfo(runner, out float exitDistance, out Vector3 _))
+            {
+                continue;
+            }
+
+            if (runnerLastExitDistance.TryGetValue(runner.AgentId, out float previousDistance))
+            {
+                rewardEngine.ApplyRunnerExitDelta(
+                    runner,
+                    previousDistance,
+                    exitDistance,
+                    episodeStep,
+                    elapsedSeconds);
+            }
+
+            runnerLastExitDistance[runner.AgentId] = exitDistance;
+        }
+    }
+
+    private void EvaluateSentinelIdlePenalties(List<BaseAgent> allAgents)
+    {
+        EnsureRewardEngine();
+        if (rewardEngine == null)
+        {
+            return;
+        }
+
+        float idleDistanceThreshold = Mathf.Max(3f, rayMaxDistance * 0.4f);
+        for (int i = 0; i < sentinels.Count; i++)
+        {
+            SentinelAgent sentinel = sentinels[i];
+            if (sentinel == null || !sentinel.IsAlive)
+            {
+                continue;
+            }
+
+            float speed = sentinel.Velocity.magnitude;
+            float nearestRunnerDist = float.MaxValue;
+            for (int r = 0; r < runners.Count; r++)
+            {
+                RunnerAgent runner = runners[r];
+                if (runner == null || !runner.IsAlive || runner.IsCaptured)
+                {
+                    continue;
+                }
+
+                float d = Vector3.Distance(sentinel.transform.position, runner.transform.position);
+                if (d < nearestRunnerDist)
+                {
+                    nearestRunnerDist = d;
+                }
+            }
+
+            rewardEngine.ApplySentinelIdlePenalty(
+                sentinel,
+                speed,
+                nearestRunnerDist,
+                idleDistanceThreshold,
+                episodeStep,
+                elapsedSeconds);
+        }
+    }
+
     private void EvaluateOrbitStallPenalty()
     {
         int repeatThreshold = Mathf.Max(2, orbitStallRepeatThreshold);
@@ -1643,6 +1720,7 @@ public class PursuitEvasionEnvController : MonoBehaviour
         sentinelLastTeammateDistance.Clear();
         sentinelNonProgressCounts.Clear();
         runnerLastThreatDistance.Clear();
+        runnerLastExitDistance.Clear();
         orbitStallPairCounts.Clear();
         orbitStallPairLastDistance.Clear();
         wallLoopRepeatCounts.Clear();
@@ -2537,44 +2615,56 @@ public class PursuitEvasionEnvController : MonoBehaviour
             return true;
         }
 
-        bool valid = true;
-        valid &= sentinels.Count == spawnManager.ExpectedSentinelCount;
-        valid &= runners.Count == spawnManager.ExpectedRunnerCount;
-        valid &= outcome == EpisodeOutcome.InProgress;
-        valid &= episodeActive;
-        valid &= episodeStep == 0;
-        valid &= Mathf.Approximately(elapsedSeconds, 0f);
+        List<string> failures = new List<string>();
+        void Require(bool condition, string message)
+        {
+            if (!condition)
+            {
+                failures.Add(message);
+            }
+        }
+
+        Require(sentinels.Count == spawnManager.ExpectedSentinelCount,
+            $"sentinel_count={sentinels.Count},expected={spawnManager.ExpectedSentinelCount}");
+        Require(runners.Count == spawnManager.ExpectedRunnerCount,
+            $"runner_count={runners.Count},expected={spawnManager.ExpectedRunnerCount}");
+        Require(outcome == EpisodeOutcome.InProgress, $"outcome={outcome}");
+        Require(episodeActive, "episode_inactive");
+        Require(episodeStep == 0, $"episode_step={episodeStep}");
+        Require(Mathf.Approximately(elapsedSeconds, 0f), $"elapsed_seconds={elapsedSeconds:0.000}");
 
         for (int i = 0; i < sentinels.Count; i++)
         {
             SentinelAgent sentinel = sentinels[i];
-            valid &= sentinel != null;
+            Require(sentinel != null, $"sentinel_{i}=null");
             if (sentinel != null)
             {
-                valid &= sentinel.IsAlive;
-                valid &= Mathf.Approximately(sentinel.CumulativeReward, 0f);
+                Require(sentinel.IsAlive, $"{sentinel.AgentId}.alive=false");
+                Require(Mathf.Approximately(sentinel.CumulativeReward, 0f),
+                    $"{sentinel.AgentId}.reward={sentinel.CumulativeReward:0.000000}");
             }
         }
 
         for (int i = 0; i < runners.Count; i++)
         {
             RunnerAgent runner = runners[i];
-            valid &= runner != null;
+            Require(runner != null, $"runner_{i}=null");
             if (runner != null)
             {
-                valid &= runner.IsAlive;
-                valid &= !runner.IsCaptured;
-                valid &= !runner.HasEscaped;
-                valid &= Mathf.Approximately(runner.CumulativeReward, 0f);
+                Require(runner.IsAlive, $"{runner.AgentId}.alive=false");
+                Require(!runner.IsCaptured, $"{runner.AgentId}.captured=true");
+                Require(!runner.HasEscaped, $"{runner.AgentId}.escaped=true");
+                Require(Mathf.Approximately(runner.CumulativeReward, 0f),
+                    $"{runner.AgentId}.reward={runner.CumulativeReward:0.000000}");
             }
         }
 
-        if (!valid)
+        if (failures.Count > 0)
         {
-            Debug.LogError("Episode reset integrity check failed.", this);
+            Debug.LogError($"Episode reset integrity check failed: {string.Join("; ", failures)}", this);
         }
 
-        return valid;
+        return failures.Count == 0;
     }
 
     private void EnsureRewardEngine()

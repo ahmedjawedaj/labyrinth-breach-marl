@@ -13,6 +13,7 @@ public class MazeGenerator : MonoBehaviour
     [Header("Maze")]
     [SerializeField] private MazeMode mazeMode = MazeMode.Static;
     [SerializeField] private int seed = 42;
+    [SerializeField] private int placementSeed = 42;
     [SerializeField] private float cellSize = 2f;
     [SerializeField] private float wallHeight = 2f;
     [SerializeField] private float wallThickness = 0.9f;
@@ -38,6 +39,8 @@ public class MazeGenerator : MonoBehaviour
     private bool generated;
     private readonly Dictionary<int, int> walkableCellByPackedCoord = new Dictionary<int, int>();
     private int walkableCellCount;
+    private string[] cachedProceduralLayout;
+    private int cachedProceduralSeed = int.MinValue;
 
     public IReadOnlyList<Vector3> SentinelSpawns => sentinelSpawns;
     public IReadOnlyList<Vector3> RunnerSpawns => runnerSpawns;
@@ -47,6 +50,8 @@ public class MazeGenerator : MonoBehaviour
 
     /// <summary>When false, the "open arena" path runs (no maze walls) but spawns and exits are still placed.</summary>
     public bool MazeWallsEnabled => mazeEnabled;
+    public string ActiveLayoutId => useUnseenLayout ? $"procedural_seed_{seed}" : "training_layout_v1";
+    public int TopologySeed => seed;
 
     private static readonly string[] TrainingLayout =
     {
@@ -62,23 +67,6 @@ public class MazeGenerator : MonoBehaviour
         "#S....#...#E#",
         "#.#.###.#.#.#",
         "#..R...#...S#",
-        "#############"
-    };
-
-    private static readonly string[] UnseenLayout =
-    {
-        "#############",
-        "#S..#...#..E#",
-        "#.#.#.#.#.#.#",
-        "#.#...#...#.#",
-        "#.###D#D###.#",
-        "#...#...#...#",
-        "###.#.###.#.#",
-        "#R..#D....#S#",
-        "#.###.#.###.#",
-        "#...#...#...#",
-        "#.#D###D#.#.#",
-        "#E..#..R...S#",
         "#############"
     };
 
@@ -114,6 +102,7 @@ public class MazeGenerator : MonoBehaviour
         mazeEnabled = enabled;
         mazeMode = configuredMazeMode;
         seed = configuredSeed;
+        placementSeed = configuredSeed;
         randomizeSpawns = shouldRandomizeSpawns;
         randomizeExits = shouldRandomizeExits;
 
@@ -128,11 +117,11 @@ public class MazeGenerator : MonoBehaviour
         bool shouldRandomizeSpawns,
         bool shouldRandomizeExits)
     {
-        bool changed = seed != configuredSeed ||
+        bool changed = placementSeed != configuredSeed ||
             randomizeSpawns != shouldRandomizeSpawns ||
             randomizeExits != shouldRandomizeExits;
 
-        seed = configuredSeed;
+        placementSeed = configuredSeed;
         randomizeSpawns = shouldRandomizeSpawns;
         randomizeExits = shouldRandomizeExits;
 
@@ -140,6 +129,19 @@ public class MazeGenerator : MonoBehaviour
         {
             generated = false;
         }
+    }
+
+    public void SetTopologySeed(int configuredSeed)
+    {
+        if (seed == configuredSeed)
+        {
+            return;
+        }
+
+        seed = configuredSeed;
+        cachedProceduralLayout = null;
+        cachedProceduralSeed = int.MinValue;
+        generated = false;
     }
 
     public void SetUseUnseenLayout(bool shouldUseUnseenLayout)
@@ -167,7 +169,8 @@ public class MazeGenerator : MonoBehaviour
         // Some scenes serialized a high wallThickness, which can pinch passages and trap policies.
         wallThickness = Mathf.Clamp(wallThickness, 0.5f, cellSize * 0.55f);
 
-        Random.InitState(seed);
+        string[] activeLayout = GetActiveLayout();
+        Random.InitState(placementSeed);
 
         if (spawnManager == null)
         {
@@ -199,7 +202,6 @@ public class MazeGenerator : MonoBehaviour
         }
 
         List<Vector3> walkableCells = new List<Vector3>();
-        string[] activeLayout = useUnseenLayout ? UnseenLayout : TrainingLayout;
         for (int row = 0; row < activeLayout.Length; row++)
         {
             for (int column = 0; column < activeLayout[row].Length; column++)
@@ -279,7 +281,7 @@ public class MazeGenerator : MonoBehaviour
             return new Bounds();
         }
 
-        string[] activeLayout = useUnseenLayout ? UnseenLayout : TrainingLayout;
+        string[] activeLayout = GetActiveLayout();
         bool has = false;
         float minX = 0f;
         float maxX = 0f;
@@ -582,7 +584,7 @@ public class MazeGenerator : MonoBehaviour
 
     private Vector3 CellToWorld(int row, int column)
     {
-        string[] activeLayout = useUnseenLayout ? UnseenLayout : TrainingLayout;
+        string[] activeLayout = GetActiveLayout();
         float x = (column - (activeLayout[row].Length - 1) * 0.5f) * cellSize;
         float z = ((activeLayout.Length - 1) * 0.5f - row) * cellSize;
         return new Vector3(x, 0f, z);
@@ -590,7 +592,7 @@ public class MazeGenerator : MonoBehaviour
 
     public int GetWalkableCellId(Vector3 worldPosition)
     {
-        string[] activeLayout = useUnseenLayout ? UnseenLayout : TrainingLayout;
+        string[] activeLayout = GetActiveLayout();
         int rows = activeLayout.Length;
         if (rows == 0)
         {
@@ -614,6 +616,245 @@ public class MazeGenerator : MonoBehaviour
     private static int PackCellCoord(int row, int column)
     {
         return (row << 16) ^ (column & 0xFFFF);
+    }
+
+    private string[] GetActiveLayout()
+    {
+        if (!useUnseenLayout)
+        {
+            return TrainingLayout;
+        }
+
+        if (cachedProceduralLayout == null || cachedProceduralSeed != seed)
+        {
+            cachedProceduralLayout = BuildProceduralLayout(seed);
+            cachedProceduralSeed = seed;
+        }
+
+        return cachedProceduralLayout;
+    }
+
+    private static string[] BuildProceduralLayout(int layoutSeed)
+    {
+        const int size = 13;
+        char[][] grid = new char[size][];
+        for (int row = 0; row < size; row++)
+        {
+            grid[row] = new char[size];
+            for (int column = 0; column < size; column++)
+            {
+                grid[row][column] = '#';
+            }
+        }
+
+        System.Random random = new System.Random(layoutSeed);
+        bool[,] visited = new bool[size, size];
+        Stack<Vector2Int> stack = new Stack<Vector2Int>();
+        Vector2Int start = new Vector2Int(1, 1);
+        visited[start.x, start.y] = true;
+        grid[start.x][start.y] = '.';
+        stack.Push(start);
+        Vector2Int[] directions =
+        {
+            new Vector2Int(-2, 0),
+            new Vector2Int(2, 0),
+            new Vector2Int(0, -2),
+            new Vector2Int(0, 2)
+        };
+
+        while (stack.Count > 0)
+        {
+            Vector2Int current = stack.Peek();
+            List<Vector2Int> candidates = new List<Vector2Int>();
+            for (int i = 0; i < directions.Length; i++)
+            {
+                Vector2Int next = current + directions[i];
+                if (next.x > 0 && next.x < size - 1 &&
+                    next.y > 0 && next.y < size - 1 &&
+                    !visited[next.x, next.y])
+                {
+                    candidates.Add(next);
+                }
+            }
+
+            if (candidates.Count == 0)
+            {
+                stack.Pop();
+                continue;
+            }
+
+            Vector2Int selected = candidates[random.Next(candidates.Count)];
+            int wallRow = (current.x + selected.x) / 2;
+            int wallColumn = (current.y + selected.y) / 2;
+            grid[wallRow][wallColumn] = '.';
+            grid[selected.x][selected.y] = '.';
+            visited[selected.x, selected.y] = true;
+            stack.Push(selected);
+        }
+
+        List<Vector2Int> optionalConnections = new List<Vector2Int>();
+        for (int row = 1; row < size - 1; row++)
+        {
+            for (int column = 1; column < size - 1; column++)
+            {
+                if (grid[row][column] != '#')
+                {
+                    continue;
+                }
+
+                bool joinsVertical = row % 2 == 0 && column % 2 == 1 &&
+                    grid[row - 1][column] != '#' && grid[row + 1][column] != '#';
+                bool joinsHorizontal = row % 2 == 1 && column % 2 == 0 &&
+                    grid[row][column - 1] != '#' && grid[row][column + 1] != '#';
+                if (joinsVertical || joinsHorizontal)
+                {
+                    optionalConnections.Add(new Vector2Int(row, column));
+                }
+            }
+        }
+
+        Shuffle(optionalConnections, random);
+        int permanentLoops = Mathf.Min(4, optionalConnections.Count);
+        for (int i = 0; i < permanentLoops; i++)
+        {
+            Vector2Int cell = optionalConnections[i];
+            grid[cell.x][cell.y] = '.';
+        }
+        int dynamicConnections = Mathf.Min(5, optionalConnections.Count - permanentLoops);
+        for (int i = 0; i < dynamicConnections; i++)
+        {
+            Vector2Int cell = optionalConnections[permanentLoops + i];
+            grid[cell.x][cell.y] = 'D';
+        }
+
+        List<Vector2Int> placementCells = new List<Vector2Int>();
+        for (int row = 1; row < size - 1; row += 2)
+        {
+            for (int column = 1; column < size - 1; column += 2)
+            {
+                placementCells.Add(new Vector2Int(row, column));
+            }
+        }
+        Shuffle(placementCells, random);
+        for (int i = 0; i < 3; i++)
+        {
+            Vector2Int cell = placementCells[i];
+            grid[cell.x][cell.y] = 'S';
+        }
+        for (int i = 3; i < 5; i++)
+        {
+            Vector2Int cell = placementCells[i];
+            grid[cell.x][cell.y] = 'R';
+        }
+        for (int i = 5; i < 7; i++)
+        {
+            Vector2Int cell = placementCells[i];
+            grid[cell.x][cell.y] = 'E';
+        }
+
+        string[] layout = new string[size];
+        for (int row = 0; row < size; row++)
+        {
+            layout[row] = new string(grid[row]);
+        }
+        return layout;
+    }
+
+    public static bool TryValidateProceduralLayout(int layoutSeed, out string signature, out string error)
+    {
+        string[] layout = BuildProceduralLayout(layoutSeed);
+        int sentinels = 0;
+        int runners = 0;
+        int exits = 0;
+        int dynamicWalls = 0;
+        int traversable = 0;
+        Vector2Int start = new Vector2Int(-1, -1);
+        ulong hash = 1469598103934665603UL;
+
+        for (int row = 0; row < layout.Length; row++)
+        {
+            for (int column = 0; column < layout[row].Length; column++)
+            {
+                char cell = layout[row][column];
+                hash ^= cell;
+                hash *= 1099511628211UL;
+                sentinels += cell == 'S' ? 1 : 0;
+                runners += cell == 'R' ? 1 : 0;
+                exits += cell == 'E' ? 1 : 0;
+                dynamicWalls += cell == 'D' ? 1 : 0;
+                if (cell != '#' && cell != 'D')
+                {
+                    traversable++;
+                    if (start.x < 0)
+                    {
+                        start = new Vector2Int(row, column);
+                    }
+                }
+            }
+        }
+
+        signature = hash.ToString("X16");
+        if (layout.Length != 13 || sentinels != 3 || runners != 2 || exits != 2 || dynamicWalls != 5)
+        {
+            error = $"seed={layoutSeed} shape/marker failure: rows={layout.Length}, S={sentinels}, R={runners}, E={exits}, D={dynamicWalls}";
+            return false;
+        }
+
+        bool[,] visited = new bool[layout.Length, layout[0].Length];
+        Queue<Vector2Int> queue = new Queue<Vector2Int>();
+        queue.Enqueue(start);
+        visited[start.x, start.y] = true;
+        int reached = 0;
+        Vector2Int[] neighbors =
+        {
+            new Vector2Int(-1, 0),
+            new Vector2Int(1, 0),
+            new Vector2Int(0, -1),
+            new Vector2Int(0, 1)
+        };
+        while (queue.Count > 0)
+        {
+            Vector2Int current = queue.Dequeue();
+            reached++;
+            for (int i = 0; i < neighbors.Length; i++)
+            {
+                Vector2Int next = current + neighbors[i];
+                if (next.x < 0 || next.x >= layout.Length ||
+                    next.y < 0 || next.y >= layout[next.x].Length ||
+                    visited[next.x, next.y])
+                {
+                    continue;
+                }
+
+                char cell = layout[next.x][next.y];
+                if (cell == '#' || cell == 'D')
+                {
+                    continue;
+                }
+                visited[next.x, next.y] = true;
+                queue.Enqueue(next);
+            }
+        }
+
+        if (reached != traversable)
+        {
+            error = $"seed={layoutSeed} disconnected with dynamic walls raised: reached={reached}, traversable={traversable}";
+            return false;
+        }
+
+        error = string.Empty;
+        return true;
+    }
+
+    private static void Shuffle<T>(List<T> items, System.Random random)
+    {
+        for (int i = items.Count - 1; i > 0; i--)
+        {
+            int selected = random.Next(i + 1);
+            T value = items[i];
+            items[i] = items[selected];
+            items[selected] = value;
+        }
     }
 
     private void CreateWall(Vector3 center, bool dynamic)

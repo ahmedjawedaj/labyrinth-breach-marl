@@ -3,8 +3,11 @@ seeds:
   - 42
   - 101
   - 202
+  - 606
+  - 707
 run_id_template: "LB_3v2_official_seed{seed}_{stage_id}"
-stop_condition_policy: stage-manifest-defined
+stop_condition_policy: fixed_trainer_step_budget
+preflight_audits: [budgets, reward]
 stages:
   - id: stage1
     order: 1

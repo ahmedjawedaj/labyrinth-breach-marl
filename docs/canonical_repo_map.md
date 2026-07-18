@@ -29,10 +29,11 @@ This is a nested Unity project artifact and is not the canonical project root.
 - raw run artifacts: `results/<run_id>/`
 - raw logs: `results/<run_id>/logs/`
 - metadata: `results/<run_id>/metadata/`
-- training status: `results/<run_id>/run_logs/`
-- per-seed eval runs: `results/seed_<seed>/eval/<eval_run_id>/`
+- training status: `results/<run_id>/metadata/training_status.json`
+- publication eval runs: `results/publication_eval_official/policy_seed_<seed>/<eval_run_id>/`
 - official derived summaries: `results/official_summary/`
-- family-level aggregate summaries: `results/LB_3v2_seen_unseen_eval_official_v1/`
+- publication evaluation aggregates: `results/publication_eval_official/aggregate/`
+- strict completion tracker: `results/LB_3v2_curriculum_official_v1/completion/`
 
 ## Documentation Alignment
 
@@ -41,4 +42,3 @@ The canonical path references are described in:
 - `docs/repo_structure.md`
 - `docs/canonical_paths.md`
 - `docs/reproducibility_guide.md`
-

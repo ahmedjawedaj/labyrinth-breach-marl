@@ -1,4 +1,8 @@
-# Labyrinth Breach - Optional Dynamic Maze 3v2 MA-POCA config.
+# Labyrinth Breach - UNVALIDATED Dynamic Maze 3v2 MA-POCA draft.
+#
+# DO NOT use this file for publication comparisons. The current Unity scene does
+# not register role-level SimpleMultiAgentGroup teams, and these stale role
+# budgets/self-play settings are not matched to the official PPO protocol.
 #
 # Purpose:
 # - Alternative multi-agent partial-observability experiment path.
@@ -43,7 +47,7 @@ behaviors:
       extrinsic:
         gamma: 0.99
         strength: 1.0
-    max_steps: 2000000
+    max_steps: 3000000
     time_horizon: 128
     summary_freq: 20000
   Runner:
