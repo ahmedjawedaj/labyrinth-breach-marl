@@ -7,6 +7,8 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{multirow}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
 \usepackage{url}
 \usepackage{xurl}
 \usepackage{hyperref}
@@ -56,13 +58,15 @@ This distinction between a \emph{benchmark contribution}, a \emph{validated diag
 \section{Related Work}
 % ============================================================
 
-We organize the related work into five themes and compare the closest systems in Table~\ref{tab:related_comparison}. The comparison exposes the intended niche of Labyrinth Breach: asymmetric teams, continuous control, partial observability, goal-directed evasion, dynamic topology, and run-level provenance in one configurable Unity benchmark. It also makes clear what the present system does not yet provide, most importantly physical-robot validation.
+We organize the related work into five themes and compare the closest systems in Table~\ref{tab:related_comparison}. The comparison exposes the intended niche of Labyrinth Breach: asymmetric teams, continuous control, partial observability, goal-directed evasion, dynamic topology, and run-level provenance in one configurable Unity benchmark. Table~\ref{tab:sota_positioning} then positions the current empirical evidence against recent journal systems. The comparison is deliberately conservative: published pursuit-evasion environments differ in dynamics, sensing, team size, terminal definitions, and evaluation budgets, so cross-paper numbers are evidence of scope and difficulty rather than a controlled leaderboard. The comparison also makes clear what the present system does not yet provide, most importantly physical-robot validation.
 
 \subsection{Pursuit-Evasion as a Multi-Agent Problem}
 
 Direct pursuit-evasion papers share the same capture-versus-escape structure as our task. In harder settings, useful behaviors go beyond direct motion and include route blocking, coordinated pressure, spatial entrapment, and strategic escape timing \cite{verma2019mapel,viper2025,gonultas2024,yan2019uncertain,liu2024uav,haeri2022emergent}. De Souza Jr. et al. train decentralized pursuit policies for non-holonomic agents and transfer them to three physical drones \cite{desouza2020}. Gonultas and Isler incorporate vehicle dynamics and sensor constraints and deploy learned policies on ground robots \cite{gonultas2024}. ViPER uses graph attention for visibility-based search and includes an aerial hardware demonstration \cite{viper2025}. These systems set a stronger robotics validation bar than simulation alone.
 
 Labyrinth Breach studies a complementary configuration: three cooperative pursuers against two learned, goal-directed evaders in a maze whose topology can change during an episode. Capture is not the sole objective because Runners can actively reach exits, and the 3v2 asymmetry creates both within-team coordination and between-team adaptation. The contribution is therefore not a claim to replace dynamics-faithful or hardware-validated pursuit systems; it is a configurable testbed for studying how environment structure, sensing, memory, and reward design interact under reproducible MARL evaluation.
+
+Recent journal work also shows how pursuit-evasion has moved beyond simple open-field capture. Du et al. model unauthorized-UAV pursuit in urban airspace with MARL \cite{du2021uav}; Peng et al. add limited visual fields, building occlusion, graph attention, and normalizing-flow policies for multi-UAV capture \cite{peng2025limited}; Qu et al. use centralized training, decentralized execution, LSTM memory, multi-agent soft actor-critic, and multi-stage reward guidance for cooperative USV pursuit \cite{qu2026usv}. Xu and Dang analyze emergent pursuit behaviors in a bounded grid world and report a 99.9\% pursuer success rate over 1,000 randomized trials, but under a simpler discrete, complete-information setting \cite{xu2025emergent}. These papers strengthen the need to report environment assumptions alongside performance.
 
 \subsection{Cooperative and Mixed MARL}
 
@@ -92,6 +96,10 @@ Evaluation methodology is a separate concern from environment design. Gorsane et
 
 Hybrid controllers combine learned actions with a geometric, model-based, or heuristic control signal. Akinmolayan et al. blend a classical interception vector with PPO and anneal the blend during training \cite{akinmolayan2026}. Labyrinth Breach contains a related optional controller feature: the Sentinel action can be blended with a direction toward the tracked Runner. The active diagnostic configuration uses a Sentinel pursuit strength of 0.15. This makes action assistance a potential confound, not an implementation detail; the coefficient must be disclosed and assist-off performance must be reported.
 
+\subsection{Explainability and Policy Interpretation}
+
+Explainable reinforcement learning is increasingly relevant for autonomous robots because strong performance alone does not show why a learned policy acts as it does. Cetin et al. apply SHAP to deep RL counter-drone decisions and show how feature attribution can make an interception policy more transparent \cite{cetin2024shap}. A recent XMARL survey frames interpretability at multiple levels: individual decisions, interaction mechanisms, team strategy emergence, and system-level performance \cite{sheng2026xai}. Labyrinth Breach follows this multi-level framing with artifact-level explanations rather than image saliency: raw observations and actions support individual inspection, replay events expose interaction mechanisms, coordination metrics summarize emergent team strategies, and paired ablations test system-level dependencies. Full SHAP analysis is left as an extension because our deployed PPO policies use role-specific continuous actions, ray groups, memory features, and multi-agent coupling; applying SHAP without careful feature grouping would risk producing visually attractive but weak explanations.
+
 \begin{table*}[t]
 \centering
 \caption{Comparison with recent learning-based pursuit-evasion systems and benchmarks. ``Dynamic topology'' means obstacles change connectivity during an episode, not only that agents move.}
@@ -111,6 +119,26 @@ ViPER \cite{viper2025} & Multi-pursuer, evaders & Planar/aerial & Visibility lim
 EPG/R2PS \cite{lu2025epg,lu2026r2ps} & Graph pursuit & Discrete graph & Full/partial & Cross-graph & Simulation & Topology transfer and robust belief \\
 Akinmolayan et al. \cite{akinmolayan2026} & 4v3 extension & Hybrid continuous & Radar + communication & Bounded defense arena & Simulation & Classical/PPO blending and self-play \\
 Labyrinth Breach & 3v2 learned teams & Continuous planar & Rays + vector memory & Changing 3-D maze & Unity simulation & Topology shifts, exit evasion, auditable metrics \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{State-of-the-art positioning. Reported performance is taken from the original papers when a directly stated number is available; differences in environment, sensing, dynamics, and episode rules prevent direct ranking.}
+\label{tab:sota_positioning}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{2.55cm}p{3.0cm}p{4.25cm}p{4.65cm}}
+\toprule
+Work & Setting & Reported evidence in source work & Position relative to Labyrinth Breach \\
+\midrule
+Du et al. \cite{du2021uav} & Urban unauthorized-UAV pursuit with MARL & Journal study of cooperative UAV pursuit in urban airspace & Stronger urban-airspace framing; Labyrinth adds learned 3v2 evaders, exit objectives, changing maze topology, and run-provenance audit \\
+De Souza Jr. et al. \cite{desouza2020} & Decentralized multi-drone pursuit & Simulation plus physical drone transfer for non-holonomic agents & Stronger sim-to-real evidence; Labyrinth studies asymmetric two-team evasion and dynamic maze connectivity \\
+Peng et al. \cite{peng2025limited} & Multi-UAV pursuit with limited visual field and building occlusion & NAGC compared with MARL baselines in high-precision simulation, including ablations and generalization scenarios & Stronger algorithmic comparison; Labyrinth contributes a reproducible Unity benchmark with exit-directed evasion and artifact-gated evaluation \\
+Qu et al. \cite{qu2026usv} & Cooperative USV pursuit using MASAC, CTDE, LSTM, and staged reward guidance & Simulation evidence for cooperative capture against a dynamic target & Stronger maritime-domain specificity; Labyrinth contributes multi-role adversarial learning and dynamic indoor-like topology \\
+Xu and Dang \cite{xu2025emergent} & Bounded 2-D grid pursuit-evasion with MARL behavior mining & 99.9\% pursuer success in 1,000 randomized trials plus clustered behavior analysis & Stronger quantitative behavior mining in a simpler complete-information grid; Labyrinth uses continuous control, partial observability, and two goal-directed evaders \\
+Labyrinth Breach & Unity 3v2 dynamic maze, assist-off canonical evaluation & 30 policy-layout cells and 3,002 episodes: 42.2\% Sentinel win rate, 53.5\% escape rate, 20.3\% held-out pincer episode rate & Not a SOTA-performance claim; evidence supports a difficult, balanced, auditable benchmark and motivates remaining retraining ablations \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -157,6 +185,42 @@ This formulation supports the study of asymmetric team interaction, coordinated 
 % ============================================================
 \section{System Design}
 % ============================================================
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+font=\scriptsize,
+node distance=0.48cm and 0.52cm,
+block/.style={draw, rounded corners=2pt, align=center, minimum height=0.82cm, text width=2.28cm, fill=gray!8},
+wideblock/.style={draw, rounded corners=2pt, align=center, minimum height=0.82cm, text width=2.72cm, fill=gray!8},
+arrow/.style={-{Latex[length=2mm]}, thick}
+]
+\node[wideblock] (cfg) {Input configuration\\scene, rules, rewards\\policy seed, topology seed};
+\node[wideblock, right=of cfg] (env) {Unity environment\\3 Sentinels, 2 Runners\\exits, captures, walls};
+\node[wideblock, right=of env] (obs) {Agent interface\\vector state, ray fan\\last-known memory};
+\node[wideblock, right=of obs] (train) {PPO self-play\\role-shared policies\\curriculum transfer};
+\node[wideblock, right=of train] (ckpt) {Checkpoints\\Sentinel ONNX\\Runner ONNX};
+\node[wideblock, below=of ckpt] (eval) {Canonical evaluation\\seen + held-out layouts\\assist-off inference};
+\node[wideblock, left=of eval] (logs) {Raw artifacts\\episode, step, reward\\replay, metadata};
+\node[wideblock, left=of logs] (kpi) {KPI pipeline\\outcomes, timing\\coordination events};
+\node[wideblock, left=of kpi] (stats) {Statistics\\seed/layout balance\\CIs, paired deltas};
+\node[wideblock, left=of stats] (paper) {Outputs\\plots, tables\\audit report, manuscript};
+
+\draw[arrow] (cfg) -- (env);
+\draw[arrow] (env) -- (obs);
+\draw[arrow] (obs) -- (train);
+\draw[arrow] (train) -- (ckpt);
+\draw[arrow] (ckpt) -- (eval);
+\draw[arrow] (eval) -- (logs);
+\draw[arrow] (logs) -- (kpi);
+\draw[arrow] (kpi) -- (stats);
+\draw[arrow] (stats) -- (paper);
+\end{tikzpicture}
+\caption{Proposed methodology and evidence flow. The same seeded configuration controls training, evaluation, logging, KPI extraction, statistical analysis, and manuscript figures. Strict artifact validation excludes runs with missing logs, unknown seeds, or mismatched scene/rule/reward provenance from publication tables.}
+\label{fig:methodology_flow}
+\end{figure*}
+
+Figure~\ref{fig:methodology_flow} summarizes the complete workflow. The core design choice is that simulation, learning, evaluation, and reporting are not treated as separate manual steps. Instead, every paper result is generated from run-scoped artifacts and auditable metadata. This is intended to reduce the common MARL failure mode in which training curves, screenshots, and hand-selected demonstrations cannot be traced back to reproducible seeds and configurations.
 
 \subsection{Environment Structure}
 
@@ -591,6 +655,33 @@ spans zero, so the defensible claim is behavioral: dynamic topology changes the
 coordination-event profile more clearly than it changes terminal win rate in
 the completed sample.
 
+\subsection{Interpretability from Existing Artifacts}
+
+The present manuscript does not report SHAP values or gradient saliency maps.
+Instead, it provides three layers of model interpretation that can be generated
+from the existing evidence pack. First, \texttt{reward\_audit.csv} identifies
+which terminal, shaping, penalty, and tactical events contributed reward at
+each episode stage. This makes it possible to separate a real outcome change
+from a shaped-return increase. Second, \texttt{replay\_events.csv} exposes
+behavioral mechanisms such as pincer pressure, corridor blocks, exit denial,
+captures, escapes, and wall shifts. Third, the paired action-assist and
+dynamic-wall interventions act as system-level counterfactual probes: the same
+policy, topology seeds, and placement seeds are replayed while changing one
+mechanism.
+
+Under this interpretation lens, the current evidence is mixed and useful. The
+assist-on probe does not show a reliable Sentinel win-rate gain, which weakens
+any claim that the learned policy merely depends on geometric pursuit
+assistance. The wall-off probe changes tactical-event prevalence more clearly
+than terminal outcomes, suggesting that dynamic topology affects how agents
+coordinate even when it does not yet produce a statistically clear win-rate
+shift. This style of explanation is coarser than feature attribution, but it is
+well matched to MARL: it interprets behavior at the event, team, and mechanism
+levels where reviewers can connect policy outputs to pursuit-evasion concepts.
+Future SHAP-style analysis should group inputs by semantic channels--self
+state, wall rays, exit rays, opponent rays, teammate rays, memory, and time
+context--rather than treating each scalar feature independently.
+
 \subsection{Unfinished Evidence}
 
 Three registered ablation families were not complete at pause: memory-off,
@@ -779,8 +870,8 @@ Several limitations remain. First, the current study is simulation-only and does
 We presented Labyrinth Breach, a reproducible Unity ML-Agents benchmark for asymmetric multi-agent pursuit-evasion with dynamic topology, partial observation, exit-directed evasion, and tactical reward shaping. Legacy results motivate curriculum and reward hypotheses, but final claims require the registered multi-seed evaluation and ablations. The environment, configurations, logging pipeline, and checkpoints are public for reproduction and extension.
 
 \bibliographystyle{IEEEtran}
-\IEEEtriggeratref{25}
-% Balance the final page for the verified 28-reference bibliography.
+\IEEEtriggeratref{28}
+% Balance the final page for the verified bibliography.
 \begin{thebibliography}{99}
 
 \bibitem{ai641projectdoc}
@@ -794,8 +885,7 @@ in \textit{Advances in Neural Information Processing Systems}, 2017.
 \bibitem{rashid2018qmix}
 T. Rashid, M. Samvelyan, C. S. de Witt, G. Farquhar, J. Foerster, and S. Whiteson,
 ``QMIX: Monotonic Value Function Factorisation for Deep Multi-Agent Reinforcement Learning,''
-in \textit{Proceedings of the 35th International Conference on Machine Learning},
-PMLR, vol. 80, pp. 4295--4304, 2018.
+\textit{Journal of Machine Learning Research}, vol. 21, no. 178, pp. 1--51, 2020.
 
 \bibitem{yu2022mappo}
 C. Yu et al.,
@@ -885,6 +975,42 @@ Y. Zhang, M. Ding, J. Zhang, Q. Yang, G. Shi, M. Lu, and F. Jiang,
 ``Multi-UAV Pursuit-Evasion Gaming Based on PSO-M3DDPG Schemes,''
 \textit{Complex \& Intelligent Systems}, vol. 10, pp. 6867--6883, 2024,
 doi: 10.1007/s40747-024-01504-1.
+
+\bibitem{du2021uav}
+W. Du, T. Guo, J. Chen, B. Li, G. Zhu, and X. Cao,
+``Cooperative Pursuit of Unauthorized UAVs in Urban Airspace via Multi-Agent Reinforcement Learning,''
+\textit{Transportation Research Part C: Emerging Technologies}, vol. 128, Art. no. 103122, 2021,
+doi: 10.1016/j.trc.2021.103122.
+
+\bibitem{peng2025limited}
+Z. Peng, G. Wu, B. Luo, and L. Wang,
+``Multi-UAV Cooperative Pursuit Strategy with Limited Visual Field in Urban Airspace: A Multi-Agent Reinforcement Learning Approach,''
+\textit{IEEE/CAA Journal of Automatica Sinica}, vol. 12, no. 7, pp. 1350--1367, 2025,
+doi: 10.1109/JAS.2024.124965.
+
+\bibitem{qu2026usv}
+X. Qu, C. Li, Y. Jiang, F. Long, and R. Zhang,
+``Cooperative Pursuit of Unmanned Surface Vehicles Using Multi-Agent Reinforcement Learning,''
+\textit{Journal of Shanghai Jiaotong University (Science)}, vol. 31, pp. 187--194, 2026,
+doi: 10.1007/s12204-025-2816-6.
+
+\bibitem{xu2025emergent}
+S. Xu and Z. Dang,
+``Emergent Behaviors in Multiagent Pursuit Evasion Games within a Bounded 2D Grid World,''
+\textit{Scientific Reports}, vol. 15, Art. no. 29376, 2025,
+doi: 10.1038/s41598-025-15057-x.
+
+\bibitem{cetin2024shap}
+E. Cetin, C. Barrado, E. Salami, and E. Pastor,
+``Analyzing Deep Reinforcement Learning Model Decisions with Shapley Additive Explanations for Counter Drone Operations,''
+\textit{Applied Intelligence}, vol. 54, pp. 12095--12111, 2024,
+doi: 10.1007/s10489-024-05733-2.
+
+\bibitem{sheng2026xai}
+L. Sheng, X. Chen, Z. Pan, F. Cai, and H. Chen,
+``From Individual Decisions to Team Emergence: A Survey on Explainable Cooperative Multi-Agent Reinforcement Learning,''
+\textit{Artificial Intelligence Review}, 2026,
+doi: 10.1007/s10462-026-11598-3.
 
 \bibitem{haeri2022emergent}
 P. K. Sharma, E. Zaroukian, D. E. Asher, and B. Howell,
