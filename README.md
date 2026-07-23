@@ -15,21 +15,24 @@ Agents are trained with **PPO** using tactical reward shaping that encourages co
 
 ### Evidence Status
 
-| Metric | Seen | Unseen |
-| --- | --- | --- |
-| Completed episodes | 12 | 106 |
-| Sentinel win rate | 75.0% | 68.9% |
-| Sentinel 95% Wilson interval | 46.8%-91.1% | 59.5%-76.9% |
-| Escape rate | 0.0% | 25.5% |
-| Mean full-capture time (s) | 13.33 | 21.04 |
+The current publication draft reports the audited canonical assist-off
+evaluation over five trained policy seeds, one seen topology, and five held-out
+topologies. Every policy-topology cell targets 100 completed episodes.
 
-These values are an audited diagnostic of one legacy checkpoint pair, not a
-publication-grade generalization result. The old unseen seeds reused one
-hard-coded topology, and the legacy seen/unseen rules also changed movement and
-wall parameters. The official replacement protocol uses five independently
-trained policy seeds, five genuinely distinct held-out topologies, matched
-non-topology controls, and 100 completed episodes per policy-topology cell. See
-[`docs/current_empirical_truth.md`](docs/current_empirical_truth.md).
+| Metric | Seen | Five held-out topologies |
+| --- | ---: | ---: |
+| Cells / episodes | 5 / 501 | 25 / 2,501 |
+| Sentinel win rate | 41.5% +/- 5.0 | 42.2% +/- 8.0 |
+| Runner win rate | 58.5% +/- 5.0 | 57.8% +/- 8.0 |
+| Escape rate | 52.9% +/- 7.4 | 53.5% +/- 9.5 |
+| Pincer episode rate | 22.6% +/- 4.1 | 20.3% +/- 4.5 |
+| Exit denial rate | 42.7% +/- 2.9 | 39.2% +/- 4.6 |
+
+The full journal submission evidence pack is still blocked because only two of
+five registered paired ablation families are complete. The current paper should
+therefore be treated as a strong advisor-review / preprint draft, not as a
+finished journal submission package. See
+[`docs/publication_pause_conclusion_2026-07-18.md`](docs/publication_pause_conclusion_2026-07-18.md).
 
 ## Project Structure
 
@@ -131,6 +134,6 @@ pass the strict training audit.
 
 ## Authors
 
+- Ahmed Jawed (25280040)
 - Muhammad Sikander Raheem (25280017)
 - Usman Irshad Bhatti (25280099)
-- Ahmed Jawed (25280040)

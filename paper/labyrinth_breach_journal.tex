@@ -347,6 +347,28 @@ A run is publication-valid only when all required artifacts are non-empty, the s
 
 The same rule applies to retries. ML-Agents \texttt{--force} replaces trainer outputs but does not truncate CSV files written independently by Unity. A corrected training retry was therefore stopped when its V5 rows were found appended to legacy reward rows. The launcher now deletes the complete target run directory before a forced launch and writes an explicit \texttt{running} status before starting Unity. The mixed directory is preserved as invalidated audit evidence, never as a source of checkpoints or results.
 
+\begin{table}[t]
+\centering
+\caption{Reviewer-facing artifact map in the public repository.}
+\label{tab:artifact_map}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{2.7cm}p{4.4cm}}
+\toprule
+Artifact & Purpose \\
+\midrule
+Unity scripts & Agent control, sensing, reward logic, episode lifecycle, and CSV logging implementation \\
+Configuration files & Trainer, reward, rule, curriculum, ablation, and evaluation manifests \\
+Setup validator & Environment and repository preflight checks before experiments \\
+Policy evaluator & Fixed-checkpoint inference launcher with metadata and log routing \\
+Readiness auditor & Gate-level audit for manuscript, training, evaluation, ablation, and reproducibility status \\
+Unit tests & Evaluation isolation and publication metric calculations \\
+Evaluation summaries & Canonical assist-off 30-cell evaluation summaries and statistics \\
+Official summaries & Learning curves, paired ablations, readiness reports, and power analysis outputs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 % ============================================================
 \section{Training and Evaluation Setup}
 % ============================================================
@@ -856,6 +878,16 @@ The excluded audit motivates three hypotheses; it does not support completed fin
 \textbf{Generalization remains the key empirical test.} The validated fixed-checkpoint diagnostic demonstrates executable transfer to a held-out scene under five seeded configurations, not five different topologies. The official protocol tests the upgraded procedural generator using independent policy seeds and five topology seeds, with topology identity recorded in every episode row.
 
 Compared to MatrixWorld~\cite{matrixworld2023}, which provides a grid-based pursuit-evasion benchmark, Labyrinth Breach operates in continuous 3D space with asymmetric teams, dynamic walls, and exit-based objectives. Compared to ViPER~\cite{viper2025}, which focuses on visibility-based pursuit, our environment adds team coordination pressure through the 3v2 asymmetry and tactical reward terms.
+
+% ============================================================
+\section{Code, Data, and Reproducibility}
+% ============================================================
+
+The source repository contains the Unity project, ML-Agents trainer manifests, reward/rule/curriculum YAML files, Python launchers, audit scripts, unit tests, manuscript source, and generated summary artifacts. The public URL is given in the abstract footnote. The intended reproduction path is documented in \texttt{docs/reproducibility\_guide.md}: build the Unity \texttt{6000.0.40f1} standalone, run the prelaunch validation gates, resume the official curriculum/evaluation/ablation launchers, export KPI summaries, rerun readiness audits, and compile the paper. The Python environment is specified by \texttt{environment.yml} and \texttt{requirements.txt}; the core versions are Unity ML-Agents package \texttt{com.unity.ml-agents@4.0.0}, Python \texttt{3.10.12}, \texttt{mlagents==1.1.0}, and \texttt{torch==2.2.1}.
+
+The current PDF is generated from the journal \LaTeX{} source under \texttt{paper/}. Official evaluation results are read from the publication-evaluation aggregate directory; learning curves and paired ablations are read from the official-summary directory. The codebase includes unit tests under \texttt{tests/}; the last local validation for the publication pipeline previously passed the repository test suite, and the final manuscript build in this revision was rendered twice with \texttt{pdflatex}. The evidence-pack builder \texttt{build\_publication\_evidence\_pack.py} creates a hashed archive with \texttt{artifact\_manifest.json} and \texttt{SHA256SUMS}, but it is intentionally blocked for a formal submission pack until all readiness gates pass. This prevents an incomplete ablation matrix from being packaged as final journal evidence.
+
+No additional random-policy or heuristic-baseline result is claimed in this manuscript. The existing lightweight paired interventions are action-assist on/off and dynamic-wall on/off, both evaluated from fixed checkpoints without retraining. A true random or hand-coded heuristic baseline would require an additional evaluation harness in Unity so that its observations, episode targets, topology seeds, and logging schema match the learned-policy protocol.
 
 % ============================================================
 \section{Limitations and Future Work}
