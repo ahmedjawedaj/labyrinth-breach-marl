@@ -13,6 +13,13 @@ public enum EpisodeOutcome
     TimeoutNoWinner
 }
 
+public enum EvaluationBaselinePolicy
+{
+    Learned,
+    Random,
+    Heuristic
+}
+
 public class PursuitEvasionEnvController : MonoBehaviour
 {
     [Header("Episode")]
@@ -86,6 +93,11 @@ public class PursuitEvasionEnvController : MonoBehaviour
     [SerializeField] private float sentinelPursuitAssistStrength = 0.15f;
     [SerializeField] private float runnerEvadeAssistStrength = 0.0f;
 
+    [Header("Evaluation Baselines")]
+    [SerializeField] private EvaluationBaselinePolicy evaluationBaselinePolicy = EvaluationBaselinePolicy.Learned;
+    [SerializeField] private string runtimeBaselineOverridePath = "../configs/runtime_overrides/active_baseline_policy.txt";
+    [SerializeField] private int evaluationBaselineSeed = 42;
+
     [Header("Logging")]
     [SerializeField] private StepLogger stepLogger;
     [SerializeField] private EpisodeLogger episodeLogger;
@@ -143,7 +155,9 @@ public class PursuitEvasionEnvController : MonoBehaviour
     public EpisodeOutcome Outcome => outcome;
     public float ElapsedSeconds => elapsedSeconds;
     public int EpisodeStep => episodeStep;
+    public int EpisodeId => episodeId;
     public bool EpisodeActive => episodeActive;
+    public EvaluationBaselinePolicy ActiveEvaluationBaselinePolicy => evaluationBaselinePolicy;
     public bool ResetIntegrityPassed => resetIntegrityPassed;
     public ObservationConfig ActiveObservationConfig => activeObservationConfig;
     public string ActiveCurriculumStageId => hasActiveCurriculumStage ? activeCurriculumStage.StageId : string.Empty;
@@ -671,6 +685,7 @@ public class PursuitEvasionEnvController : MonoBehaviour
 
         LoadAndApplyRuleConfig();
         ApplyRuntimeRewardOverrideIfPresent();
+        ApplyRuntimeBaselineOverrideIfPresent();
 
         if (mazeGenerator != null)
         {
@@ -1138,6 +1153,75 @@ public class PursuitEvasionEnvController : MonoBehaviour
         }
     }
 
+    private void ApplyRuntimeBaselineOverrideIfPresent()
+    {
+        string configuredPolicy = System.Environment.GetEnvironmentVariable("LABYRINTH_BASELINE_POLICY");
+        if (string.IsNullOrWhiteSpace(configuredPolicy))
+        {
+            configuredPolicy = ReadRuntimeBaselineOverride();
+        }
+
+        if (!string.IsNullOrWhiteSpace(configuredPolicy))
+        {
+            if (TryParseEvaluationBaseline(configuredPolicy, out EvaluationBaselinePolicy parsedPolicy))
+            {
+                evaluationBaselinePolicy = parsedPolicy;
+            }
+            else if (logEpisodeEvents)
+            {
+                Debug.LogWarning($"Unknown evaluation baseline policy '{configuredPolicy}'. Using {evaluationBaselinePolicy}.", this);
+            }
+        }
+
+        string configuredSeed = System.Environment.GetEnvironmentVariable("LABYRINTH_BASELINE_SEED");
+        if (!string.IsNullOrWhiteSpace(configuredSeed)
+            && int.TryParse(configuredSeed.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsedSeed))
+        {
+            evaluationBaselineSeed = parsedSeed;
+        }
+    }
+
+    private string ReadRuntimeBaselineOverride()
+    {
+        if (string.IsNullOrWhiteSpace(runtimeBaselineOverridePath))
+        {
+            return string.Empty;
+        }
+
+        string resolvedPath = LabyrinthPathResolver.ResolvePath(runtimeBaselineOverridePath);
+        if (!File.Exists(resolvedPath))
+        {
+            return string.Empty;
+        }
+
+        return (File.ReadAllText(resolvedPath) ?? string.Empty).Trim();
+    }
+
+    private static bool TryParseEvaluationBaseline(string raw, out EvaluationBaselinePolicy policy)
+    {
+        policy = EvaluationBaselinePolicy.Learned;
+        string normalized = (raw ?? string.Empty).Trim().ToLowerInvariant();
+        switch (normalized)
+        {
+            case "":
+            case "learned":
+            case "ppo":
+            case "policy":
+                policy = EvaluationBaselinePolicy.Learned;
+                return true;
+            case "random":
+            case "random_policy":
+                policy = EvaluationBaselinePolicy.Random;
+                return true;
+            case "heuristic":
+            case "heuristic_policy":
+                policy = EvaluationBaselinePolicy.Heuristic;
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private string ResolveRuntimeConfigOverridePath(string overrideFilePath)
     {
         if (string.IsNullOrWhiteSpace(overrideFilePath))
@@ -1445,6 +1529,177 @@ public class PursuitEvasionEnvController : MonoBehaviour
         float urgency = Mathf.Clamp01(1f - (distance / Mathf.Max(1f, rayMaxDistance)));
         evadeWeight = Mathf.Clamp01(runnerEvadeAssistStrength * (0.3f + 0.7f * urgency));
         return true;
+    }
+
+    public bool TryGetEvaluationBaselineAction(BaseAgent agent, out Vector3 actionDirection)
+    {
+        actionDirection = Vector3.zero;
+        if (agent == null || !agent.IsAlive || evaluationBaselinePolicy == EvaluationBaselinePolicy.Learned)
+        {
+            return false;
+        }
+
+        if (evaluationBaselinePolicy == EvaluationBaselinePolicy.Random)
+        {
+            actionDirection = GetDeterministicRandomAction(agent);
+            return true;
+        }
+
+        if (evaluationBaselinePolicy == EvaluationBaselinePolicy.Heuristic)
+        {
+            actionDirection = agent.Team == AgentTeam.Sentinel
+                ? GetHeuristicSentinelAction(agent)
+                : GetHeuristicRunnerAction(agent);
+            if (actionDirection.sqrMagnitude < 1e-5f)
+            {
+                actionDirection = GetDeterministicRandomAction(agent);
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private Vector3 GetHeuristicSentinelAction(BaseAgent agent)
+    {
+        RunnerAgent target = FindNearestActiveRunner(agent.transform.position);
+        if (target == null)
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 desired = FlattenedDirection(target.transform.position - agent.transform.position);
+        return SteerAroundImmediateWall(agent.transform.position, desired, 2.5f);
+    }
+
+    private Vector3 GetHeuristicRunnerAction(BaseAgent agent)
+    {
+        SentinelAgent threat = FindNearestActiveSentinel(agent.transform.position);
+        Vector3 desired = Vector3.zero;
+        if (threat != null)
+        {
+            desired += FlattenedDirection(agent.transform.position - threat.transform.position) * 0.65f;
+        }
+
+        if (TryGetNearestExitInfo(agent, out float _, out Vector3 offsetToExit))
+        {
+            desired += FlattenedDirection(offsetToExit) * 0.45f;
+        }
+
+        if (desired.sqrMagnitude < 1e-5f)
+        {
+            return Vector3.zero;
+        }
+
+        return SteerAroundImmediateWall(agent.transform.position, desired.normalized, 2.2f);
+    }
+
+    private RunnerAgent FindNearestActiveRunner(Vector3 position)
+    {
+        RunnerAgent nearest = null;
+        float nearestSq = float.MaxValue;
+        for (int i = 0; i < runners.Count; i++)
+        {
+            RunnerAgent runner = runners[i];
+            if (runner == null || !runner.IsAlive || runner.IsCaptured)
+            {
+                continue;
+            }
+
+            float sq = (runner.transform.position - position).sqrMagnitude;
+            if (sq < nearestSq)
+            {
+                nearestSq = sq;
+                nearest = runner;
+            }
+        }
+
+        return nearest;
+    }
+
+    private SentinelAgent FindNearestActiveSentinel(Vector3 position)
+    {
+        SentinelAgent nearest = null;
+        float nearestSq = float.MaxValue;
+        for (int i = 0; i < sentinels.Count; i++)
+        {
+            SentinelAgent sentinel = sentinels[i];
+            if (sentinel == null || !sentinel.IsAlive)
+            {
+                continue;
+            }
+
+            float sq = (sentinel.transform.position - position).sqrMagnitude;
+            if (sq < nearestSq)
+            {
+                nearestSq = sq;
+                nearest = sentinel;
+            }
+        }
+
+        return nearest;
+    }
+
+    private Vector3 GetDeterministicRandomAction(BaseAgent agent)
+    {
+        int hash = StableHash(agent.AgentId);
+        float x = DeterministicUnitValue(evaluationBaselineSeed + episodeId * 73856093 + episodeStep * 19349663 + hash);
+        float z = DeterministicUnitValue(evaluationBaselineSeed + episodeId * 83492791 + episodeStep * 297121507 + hash * 31);
+        Vector3 action = new Vector3(x * 2f - 1f, 0f, z * 2f - 1f);
+        return action.sqrMagnitude > 1f ? action.normalized : action;
+    }
+
+    private static float DeterministicUnitValue(int value)
+    {
+        float raw = Mathf.Sin(value * 12.9898f) * 43758.5453f;
+        return raw - Mathf.Floor(raw);
+    }
+
+    private static int StableHash(string value)
+    {
+        unchecked
+        {
+            int hash = 23;
+            if (!string.IsNullOrEmpty(value))
+            {
+                for (int i = 0; i < value.Length; i++)
+                {
+                    hash = hash * 31 + value[i];
+                }
+            }
+
+            return hash;
+        }
+    }
+
+    private static Vector3 FlattenedDirection(Vector3 vector)
+    {
+        vector.y = 0f;
+        float magnitude = vector.magnitude;
+        return magnitude > 1e-5f ? vector / magnitude : Vector3.zero;
+    }
+
+    private Vector3 SteerAroundImmediateWall(Vector3 position, Vector3 desired, float castDistance)
+    {
+        desired = FlattenedDirection(desired);
+        if (desired.sqrMagnitude < 1e-5f)
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 castOrigin = position + Vector3.up * 0.25f;
+        if (TryGetBlockingHit(castOrigin, 0.45f, desired, Mathf.Max(0.1f, castDistance), out RaycastHit hit))
+        {
+            Vector3 slide = Vector3.ProjectOnPlane(desired, hit.normal);
+            slide.y = 0f;
+            if (slide.sqrMagnitude > 1e-5f)
+            {
+                desired = (desired * 0.35f + slide.normalized * 0.65f).normalized;
+            }
+        }
+
+        return desired;
     }
 
     private void EvaluateRunnerThreatShaping(List<BaseAgent> allAgents)

@@ -22,17 +22,38 @@ topologies. Every policy-topology cell targets 100 completed episodes.
 | Metric | Seen | Five held-out topologies |
 | --- | ---: | ---: |
 | Cells / episodes | 5 / 501 | 25 / 2,501 |
-| Sentinel win rate | 41.5% +/- 5.0 | 42.2% +/- 8.0 |
-| Runner win rate | 58.5% +/- 5.0 | 57.8% +/- 8.0 |
-| Escape rate | 52.9% +/- 7.4 | 53.5% +/- 9.5 |
-| Pincer episode rate | 22.6% +/- 4.1 | 20.3% +/- 4.5 |
-| Exit denial rate | 42.7% +/- 2.9 | 39.2% +/- 4.6 |
+| Sentinel win rate | 41.5% +/- 5.6 | 42.2% +/- 8.2 |
+| Runner win rate | 58.5% +/- 5.6 | 57.8% +/- 8.2 |
+| Escape rate | 52.9% +/- 8.3 | 53.5% +/- 9.6 |
+| Pincer episode rate | 22.6% +/- 4.5 | 20.3% +/- 4.5 |
+| Exit denial rate | 42.7% +/- 3.3 | 39.2% +/- 4.7 |
 
 The full journal submission evidence pack is still blocked because only two of
 five registered paired ablation families are complete. The current paper should
 therefore be treated as a strong advisor-review / preprint draft, not as a
 finished journal submission package. See
 [`docs/publication_pause_conclusion_2026-07-18.md`](docs/publication_pause_conclusion_2026-07-18.md).
+
+### Lightweight Baseline Diagnostics
+
+The July 2026 low-effort baseline pass added evaluation-only random and
+geometric-heuristic controllers without retraining. The 12-cell diagnostic
+matrix uses one evaluation seed, six seen/held-out splits, and 25 target
+episodes per split. Aggregates are written to
+`results/lightweight_baselines/aggregate/baseline_eval_summary.csv`.
+The retained baseline evidence level is KPI/metadata summaries plus aggregate
+CSV/JSON outputs; rerun these cells with raw CSV retention before treating them
+as part of a formal journal evidence pack.
+
+| Controller | Seen Sentinel win | Held-out Sentinel win | Held-out escape | Held-out full capture |
+| --- | ---: | ---: | ---: | ---: |
+| Learned PPO, canonical | 41.5% | 42.2% +/- 8.2 | 53.5% +/- 9.6 | 22.79 +/- 4.04 s |
+| Random actions | 32.0% | 27.2% +/- 4.4 | 44.8% +/- 4.4 | 103.03 +/- 13.23 s |
+| Geometric heuristic | 73.1% | 68.3% +/- 9.7 | 30.1% +/- 9.5 | 8.74 +/- 0.59 s |
+
+These rows are diagnostic controls, not matched-compute learned SOTA baselines.
+They show that learned PPO is better than random action selection, while a
+privileged hand-coded geometric controller still captures faster.
 
 ## Project Structure
 

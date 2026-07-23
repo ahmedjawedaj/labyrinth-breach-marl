@@ -310,6 +310,9 @@ def write_runtime_config_overrides(args: argparse.Namespace, root: Path) -> None
     else:
         reward_override.write_text("", encoding="utf-8")
 
+    baseline_override = override_dir / "active_baseline_policy.txt"
+    baseline_override.write_text((args.baseline_policy or "learned").strip() + "\n", encoding="utf-8")
+
 
 def file_record(root: Path, path: Path, label: str) -> dict[str, Any]:
     try:
@@ -349,6 +352,7 @@ def write_evaluation_metadata(
         "eval_environment_type": args.manifest_data.get("layout_split", "unspecified"),
         "scene": manifest_value(args, "scene"),
         "deterministic": args.deterministic,
+        "baseline_policy": args.baseline_policy,
         "max_runtime_seconds": args.max_runtime_seconds,
         "target_episodes": args.target_episodes,
         "timeout_wait_seconds": args.timeout_wait,
@@ -394,6 +398,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--timeout-wait", type=int, default=120)
     parser.add_argument("--base-port", type=int)
     parser.add_argument("--deterministic", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument(
+        "--baseline-policy",
+        choices=("learned", "random", "heuristic"),
+        default="learned",
+        help="Override Unity actions with a lightweight evaluation baseline instead of learned policy output.",
+    )
     parser.add_argument("--skip-checkpoint-check", action="store_true")
     parser.add_argument(
         "--force-output",
@@ -497,6 +507,8 @@ def main() -> int:
     eval_run_id = resolve_eval_run_id(args)
     process_env = os.environ.copy()
     process_env["LABYRINTH_REPO_ROOT"] = str(root)
+    process_env["LABYRINTH_BASELINE_POLICY"] = args.baseline_policy
+    process_env["LABYRINTH_BASELINE_SEED"] = str(manifest_value(args, "seed") if manifest_value(args, "seed") is not None else 42)
     configured_scene = manifest_value(args, "scene")
     if configured_scene:
         process_env["LABYRINTH_SCENE"] = str(configured_scene)
@@ -624,6 +636,7 @@ def main() -> int:
                 "termination_reason": termination_reason,
                 "process_exit_code": process_rc,
                 "target_episodes": args.target_episodes,
+                "baseline_policy": args.baseline_policy,
                 "completed_episodes": completed_episodes,
                 "max_runtime_seconds": args.max_runtime_seconds,
                 "success": (

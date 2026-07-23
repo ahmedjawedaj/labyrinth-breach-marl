@@ -38,7 +38,7 @@ def discover_unity(explicit: str | None) -> Path:
     raise FileNotFoundError("Could not find Unity. Install Unity 6000.0.40f1 or pass --unity.")
 
 
-def build_command(unity: Path, output: Path, *, server_build: bool, log_file: Path) -> list[str]:
+def build_command(unity: Path, output: Path, *, server_build: bool, nographics: bool, log_file: Path) -> list[str]:
     root = repo_root()
     command = [
         str(unity),
@@ -53,6 +53,8 @@ def build_command(unity: Path, output: Path, *, server_build: bool, log_file: Pa
         "-logFile",
         str(log_file),
     ]
+    if nographics:
+        command.insert(3, "-nographics")
     if server_build:
         command.append("-serverBuild")
     return command
@@ -64,6 +66,11 @@ def main() -> int:
     parser.add_argument("--output", default="builds/macos/LabyrinthBreach.app")
     parser.add_argument("--log-file", default="builds/macos/unity_build.log")
     parser.add_argument("--server-build", action="store_true", help="Request a Unity server/headless build when supported.")
+    parser.add_argument(
+        "--graphics",
+        action="store_true",
+        help="Do not pass -nographics to Unity. Batch builds default to -nographics for unattended runs.",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -74,13 +81,20 @@ def main() -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
-    command = build_command(unity, output, server_build=args.server_build, log_file=log_file)
+    command = build_command(
+        unity,
+        output,
+        server_build=args.server_build,
+        nographics=not args.graphics,
+        log_file=log_file,
+    )
     manifest = {
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "unity": str(unity),
         "output": str(output),
         "log_file": str(log_file),
         "server_build": args.server_build,
+        "nographics": not args.graphics,
         "command": command,
     }
     manifest_path = output.parent / "build_manifest.json"

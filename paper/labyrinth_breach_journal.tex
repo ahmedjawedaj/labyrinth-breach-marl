@@ -7,6 +7,8 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{multirow}
+\usepackage{float}
+\usepackage{placeins}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning}
 \usepackage{url}
@@ -364,6 +366,7 @@ Policy evaluator & Fixed-checkpoint inference launcher with metadata and log rou
 Readiness auditor & Gate-level audit for manuscript, training, evaluation, ablation, and reproducibility status \\
 Unit tests & Evaluation isolation and publication metric calculations \\
 Evaluation summaries & Canonical assist-off 30-cell evaluation summaries and statistics \\
+Diagnostic baselines & Random and geometric-heuristic action-override evaluations with aggregate CSV/JSON outputs \\
 Official summaries & Learning curves, paired ablations, readiness reports, and power analysis outputs \\
 \bottomrule
 \end{tabular}
@@ -605,14 +608,14 @@ deviation.}
 Metric & Seen & Five held-out topologies \\
 \midrule
 Cells / episodes & 5 / 501 & 25 / 2,501 \\
-Sentinel win rate & 41.5\% $\pm$ 5.0 & 42.2\% $\pm$ 8.0 \\
-Runner win rate & 58.5\% $\pm$ 5.0 & 57.8\% $\pm$ 8.0 \\
-Escape rate & 52.9\% $\pm$ 7.4 & 53.5\% $\pm$ 9.5 \\
-Full capture time & 23.70 $\pm$ 4.55 s & 22.79 $\pm$ 3.96 s \\
-Pincer episode rate & 22.6\% $\pm$ 4.1 & 20.3\% $\pm$ 4.5 \\
+Sentinel win rate & 41.5\% $\pm$ 5.6 & 42.2\% $\pm$ 8.2 \\
+Runner win rate & 58.5\% $\pm$ 5.6 & 57.8\% $\pm$ 8.2 \\
+Escape rate & 52.9\% $\pm$ 8.3 & 53.5\% $\pm$ 9.6 \\
+Full capture time & 23.70 $\pm$ 5.09 s & 22.79 $\pm$ 4.04 s \\
+Pincer episode rate & 22.6\% $\pm$ 4.5 & 20.3\% $\pm$ 4.5 \\
 Corridor block rate & 4.0\% $\pm$ 1.8 & 2.5\% $\pm$ 1.8 \\
-Exit denial rate & 42.7\% $\pm$ 2.9 & 39.2\% $\pm$ 4.6 \\
-Trap success rate & 49.4\% $\pm$ 4.2 & 50.4\% $\pm$ 8.0 \\
+Exit denial rate & 42.7\% $\pm$ 3.3 & 39.2\% $\pm$ 4.7 \\
+Trap success rate & 49.4\% $\pm$ 4.7 & 50.4\% $\pm$ 8.2 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -627,6 +630,52 @@ not materially worse than the seen split at this aggregate level, but the
 policy-seed variation is substantial: mean Sentinel win rate across the six
 layouts ranges from 31.6\% for seed 101 to 50.8\% for seed 606. This is why the
 paper reports per-seed results and avoids a robust-generalization claim.
+
+\subsection{Lightweight Evaluation-Only Baselines}
+
+To answer the reviewer request for a state-of-practice comparison without
+claiming an unearned retrained SOTA baseline, we added two evaluation-only
+controllers to the Unity runtime. The baseline selector is controlled by
+\texttt{LABYRINTH\_BASELINE\_POLICY} or by the runtime override file written by
+\texttt{scripts/evaluate\_policy.py}. In \texttt{random} mode, both teams
+receive deterministic pseudo-random continuous actions keyed by episode, step,
+agent identifier, and seed. In \texttt{heuristic} mode, Sentinels greedily steer
+toward the nearest active Runner, while Runners blend steering away from the
+nearest Sentinel with steering toward the nearest exit; both use local wall
+avoidance. The ML-Agents checkpoint path is still supplied only to maintain the
+standard inference handshake, but the Unity action override ignores the neural
+policy outputs.
+
+Table~\ref{tab:diagnostic_baselines} reports a 12-cell low-cost comparison
+using one evaluation seed and 25 target episodes per split. These rows are
+diagnostic, not a replacement for the five-seed canonical evaluation. They show
+that the learned PPO policy is substantially stronger than random pursuit on
+held-out capture time and coordination prevalence, but a hand-coded geometric
+controller still captures faster and wins more often. The defensible conclusion
+is therefore modest: the benchmark is not solved by the learned policy, and a
+future journal submission should include at least one matched-compute learned
+MARL baseline in addition to these rule-based controls.
+
+\begin{table*}[t]
+\centering
+\caption{Low-cost evaluation-only baselines. Learned PPO uses the canonical
+five-policy-seed assist-off evaluation from Table~\ref{tab:official_eval_pause}.
+Random and heuristic rows use one evaluation seed, six splits, and 25 target
+episodes per split; held-out values are mean $\pm$ standard deviation over five
+layout cells.}
+\label{tab:diagnostic_baselines}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{2.6cm}p{3.2cm}cccccc}
+\toprule
+Controller & Evidence & S win seen & S win held out & Escape seen & Escape held out & Full cap. held out & Pincer held out \\
+\midrule
+Learned PPO & 5 policy seeds, 30 cells, 3{,}002 episodes & 41.5$\pm$5.6 & 42.2$\pm$8.2 & 52.9$\pm$8.3 & 53.5$\pm$9.6 & 22.79$\pm$4.04 s & 20.3$\pm$4.5 \\
+Random actions & 1 eval seed, 6 cells, 150 episodes & 32.0 & 27.2$\pm$4.4 & 48.0 & 44.8$\pm$4.4 & 103.03$\pm$13.23 s & 8.8$\pm$4.4 \\
+Geometric heuristic & 1 eval seed, 6 cells, 152 episodes & 73.1 & 68.3$\pm$9.7 & 26.9 & 30.1$\pm$9.5 & 8.74$\pm$0.59 s & 26.3$\pm$13.0 \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
 \subsection{Completed Paired Ablations}
 
@@ -720,7 +769,7 @@ final journal submission package.
 
 \noindent\textbf{Exclusion notice.} Every table and figure in this section is excluded from the official empirical study. The training plots use a legacy three-phase curriculum and legacy reward definitions. The fixed-checkpoint diagnostic executes a checkpoint named \texttt{v5\_dynamicmaze}, but its inference episodes load \texttt{reward\_dynamicmaze\_memory\_v4.yaml}, retain Sentinel action assistance at $\rho_S=0.15$, reuse one hard-coded unseen topology, and apply a compound rule shift. These artifacts validate execution and provenance tooling only; they do not answer RQ1--RQ3 and must be replaced by the registered v5 matrix.
 
-\begin{table}[t]
+\begin{table}[H]
 \centering
 \caption{Excluded legacy v4-era three-phase summary; historical motivation only.}
 \label{tab:phase_results}
@@ -740,12 +789,13 @@ Cluster penalty & $-0.013$ & $-0.518$ & $-0.035$ \\
 \end{table}
 
 The preliminary Sentinel win rate follows a curriculum-driven trend: near-perfect capture in the open arena/static maze setting, reduced dominance in the dynamic maze, and a balanced outcome in a small unseen-layout evaluation. We treat this as motivation rather than proof: stronger claims require repeated evaluation across policy seeds and multiple held-out layouts with confidence intervals.
+\FloatBarrier
 
 \subsection{Validated Checkpoint Diagnostic}
 
 After correcting standalone scene, rule-config, and reward-config routing, we evaluated the fixed \texttt{v5\_dynamicmaze} checkpoint pair across one seen layout and five held-out seed configurations. Despite the checkpoint name, episode provenance confirms that inference used the legacy v4 reward file; Table~\ref{tab:rewards} therefore does not describe this diagnostic. Three evaluation seeds were used, but these are not independent training seeds. Each matrix cell ran for 30 wall-clock seconds in deterministic inference mode. The audit accepted all 18 cells, all 108 required raw/KPI artifacts, and every episode-level scene/rule/reward provenance check. A subsequent code audit found two design confounds. First, the five configurations reused one hard-coded unseen topology; their seeds changed placements and stochastic events, not maze connectivity. Second, the legacy seen and unseen rule files changed agent speeds, capture radius, and wall timing together with the scene. They therefore measure transfer under a compound configuration shift, not a controlled topology effect.
 
-\begin{table}[t]
+\begin{table}[H]
 \centering
 \caption{Excluded assist-on/v4 fixed-checkpoint diagnostic. Intervals are 95\% Wilson intervals over completed episodes.}
 \label{tab:validated_diagnostic}
@@ -767,7 +817,7 @@ The aggregate result remains Sentinel-favored, but the seed configuration matter
 
 The canonical statistics pipeline also computes equal-configuration estimates. For the five unseen configurations, the Sentinel win rate is 68.9\% when all 106 episodes are pooled and 68.3\% when every configuration receives equal weight. Mean full-capture time changes from 21.04~s to 23.25~s under equal weighting. Policy-level hierarchical intervals are deliberately omitted for this diagnostic because all rows share one checkpoint pair; nominal evaluation seeds do not create independent trained policies.
 
-\begin{table}[t]
+\begin{table}[H]
 \centering
 \caption{Excluded assist-on/v4 results on one shared unseen topology. ``Full cap.'' is mean full-capture time over Sentinel wins.}
 \label{tab:per_layout}
@@ -887,7 +937,7 @@ The source repository contains the Unity project, ML-Agents trainer manifests, r
 
 The current PDF is generated from the journal \LaTeX{} source under \texttt{paper/}. Official evaluation results are read from the publication-evaluation aggregate directory; learning curves and paired ablations are read from the official-summary directory. The codebase includes unit tests under \texttt{tests/}; the last local validation for the publication pipeline previously passed the repository test suite, and the final manuscript build in this revision was rendered twice with \texttt{pdflatex}. The evidence-pack builder \texttt{build\_publication\_evidence\_pack.py} creates a hashed archive with \texttt{artifact\_manifest.json} and \texttt{SHA256SUMS}, but it is intentionally blocked for a formal submission pack until all readiness gates pass. This prevents an incomplete ablation matrix from being packaged as final journal evidence.
 
-No additional random-policy or heuristic-baseline result is claimed in this manuscript. The existing lightweight paired interventions are action-assist on/off and dynamic-wall on/off, both evaluated from fixed checkpoints without retraining. A true random or hand-coded heuristic baseline would require an additional evaluation harness in Unity so that its observations, episode targets, topology seeds, and logging schema match the learned-policy protocol.
+This revision also includes a low-effort random-action and geometric-heuristic baseline harness for evaluation-only diagnostics. Those rows are generated through the same fixed-checkpoint ML-Agents launch path and KPI summarizer, with Unity overriding policy actions at runtime. Their retained evidence level is KPI/metadata summaries plus aggregate CSV/JSON outputs, so they are reported as diagnostic controls rather than a formal matched-compute SOTA comparison. A full journal evidence pack should rerun the baseline cells with raw CSV log retention enabled or replace them with a learned MARL baseline under equalized compute.
 
 % ============================================================
 \section{Limitations and Future Work}

@@ -199,6 +199,11 @@ public abstract class BaseAgent : Agent
         }
 
         if (environmentController != null
+            && environmentController.TryGetEvaluationBaselineAction(this, out Vector3 baselineDirection))
+        {
+            actionDirection = baselineDirection;
+        }
+        else if (environmentController != null
             && this is SentinelAgent sentinel
             && environmentController.TryGetSentinelPursuitAssist(sentinel, out Vector3 assistDirection, out float assistWeight))
         {

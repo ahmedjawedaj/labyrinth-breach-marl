@@ -147,6 +147,29 @@ The immediate work is the clean seed-42 Stage 4 replacement plus aligned
 ablation training, followed by fixed-count canonical and paired evaluations.
 Build, routing, transfer, raw-log, KPI, and run-audit gates remain operational.
 
+## Low-effort baseline pass on 2026-07-24
+
+A non-training baseline pass was completed using the refreshed macOS Unity
+standalone. The runtime now supports `learned`, `random`, and `heuristic`
+evaluation policies through `LABYRINTH_BASELINE_POLICY` and the matching
+runtime override file written by `scripts/evaluate_policy.py`.
+
+The diagnostic matrix ran 12/12 cells: random and geometric-heuristic action
+overrides across one seen split and five held-out splits, one evaluation seed,
+and 25 target episodes per split. The retained evidence level is KPI/metadata
+summaries plus aggregate CSV/JSON outputs; raw baseline CSV logs should be
+rerun and retained before using these rows in a formal evidence pack. The
+aggregate outputs are:
+
+- `results/lightweight_baselines/aggregate/baseline_eval_summary.csv`
+- `results/lightweight_baselines/aggregate/baseline_eval_summary.json`
+
+Held-out Sentinel win rate was 27.2% +/- 4.4 for random actions and 68.3% +/-
+9.7 for the geometric heuristic. The canonical learned PPO row remains 42.2% +/-
+8.2 over five trained policy seeds and 100 target episodes per cell. These
+baselines should be reported as diagnostic controls only; they do not replace a
+matched-compute learned MARL comparison such as MAPPO or MA-POCA.
+
 ## Active command
 
 ```bash
