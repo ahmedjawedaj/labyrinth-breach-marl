@@ -1,0 +1,7 @@
+section,item,cells,episodes,sentinel_win_rate,escape_rate,detail
+official_evaluation,seen,,501,0.4151696606786427,0.5289421157684631,canonical assist-off
+official_evaluation,unseen,,2501,0.4218312674930028,0.5345861655337865,canonical assist-off
+lightweight_baseline,heuristic_seen,1,26,0.7307692307692307,0.2692307692307692,evaluation-only action override
+lightweight_baseline,heuristic_unseen,5,126,0.6827692307692308,0.30123076923076925,evaluation-only action override
+lightweight_baseline,random_seen,1,25,0.32,0.48,evaluation-only action override
+lightweight_baseline,random_unseen,5,125,0.272,0.44800000000000006,evaluation-only action override

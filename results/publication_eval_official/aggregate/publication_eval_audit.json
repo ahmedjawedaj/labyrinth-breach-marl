@@ -1,0 +1,377 @@
+{
+  "aggregate": "results/publication_eval_official/aggregate/publication_eval_summary.json",
+  "episode_target_per_cell": 100,
+  "expected_matrix_rows": 30,
+  "expected_required_artifacts": 180,
+  "generated_utc": "2026-07-17T22:13:11.675535+00:00",
+  "group_summary": {
+    "seen": {
+      "episodes": 501,
+      "escape_rate": 0.5289421157684631,
+      "escapes": 265,
+      "mean_full_capture_seconds": 23.66205769230769,
+      "runner_win_rate": 0.5848303393213573,
+      "runner_wins": 293,
+      "sentinel_win_rate": 0.4151696606786427,
+      "sentinel_win_rate_wilson_95_ci": [
+        0.3728263882362966,
+        0.45880396869150003
+      ],
+      "sentinel_wins": 208
+    },
+    "unseen": {
+      "episodes": 2501,
+      "escape_rate": 0.5345861655337865,
+      "escapes": 1337,
+      "mean_full_capture_seconds": 22.767663507108967,
+      "runner_win_rate": 0.5781687325069972,
+      "runner_wins": 1446,
+      "sentinel_win_rate": 0.4218312674930028,
+      "sentinel_win_rate_wilson_95_ci": [
+        0.4026105069716219,
+        0.44129179806834556
+      ],
+      "sentinel_wins": 1055
+    }
+  },
+  "matrix_manifest": "configs/experiment_manifests/official_publication_eval_matrix.yaml",
+  "observed_matrix_rows": 30,
+  "problems": [],
+  "required_artifacts_per_run": 6,
+  "results_dir": "results/publication_eval_official",
+  "runs": [
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 42,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_dynamic_config_no_assist.yaml",
+      "expected_scene": "03_DynamicMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed42_seen_seed42_100ep",
+      "split_id": "seen_seed42",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 42,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_config_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed42_unseen_seed101_100ep",
+      "split_id": "unseen_seed101",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 42,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed202_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed42_unseen_seed202_100ep",
+      "split_id": "unseen_seed202",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 42,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed303_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed42_unseen_seed303_100ep",
+      "split_id": "unseen_seed303",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 42,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed404_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed42_unseen_seed404_100ep",
+      "split_id": "unseen_seed404",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 42,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed505_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed42_unseen_seed505_100ep",
+      "split_id": "unseen_seed505",
+      "valid": true
+    },
+    {
+      "completed_episodes": 101,
+      "evaluation_seed": 101,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_dynamic_config_no_assist.yaml",
+      "expected_scene": "03_DynamicMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed101_seen_seed42_100ep",
+      "split_id": "seen_seed42",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 101,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_config_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed101_unseen_seed101_100ep",
+      "split_id": "unseen_seed101",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 101,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed202_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed101_unseen_seed202_100ep",
+      "split_id": "unseen_seed202",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 101,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed303_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed101_unseen_seed303_100ep",
+      "split_id": "unseen_seed303",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 101,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed404_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed101_unseen_seed404_100ep",
+      "split_id": "unseen_seed404",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 101,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed505_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed101_unseen_seed505_100ep",
+      "split_id": "unseen_seed505",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 202,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_dynamic_config_no_assist.yaml",
+      "expected_scene": "03_DynamicMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed202_seen_seed42_100ep",
+      "split_id": "seen_seed42",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 202,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_config_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed202_unseen_seed101_100ep",
+      "split_id": "unseen_seed101",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 202,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed202_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed202_unseen_seed202_100ep",
+      "split_id": "unseen_seed202",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 202,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed303_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed202_unseen_seed303_100ep",
+      "split_id": "unseen_seed303",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 202,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed404_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed202_unseen_seed404_100ep",
+      "split_id": "unseen_seed404",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 202,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed505_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed202_unseen_seed505_100ep",
+      "split_id": "unseen_seed505",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 606,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_dynamic_config_no_assist.yaml",
+      "expected_scene": "03_DynamicMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed606_seen_seed42_100ep",
+      "split_id": "seen_seed42",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 606,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_config_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed606_unseen_seed101_100ep",
+      "split_id": "unseen_seed101",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 606,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed202_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed606_unseen_seed202_100ep",
+      "split_id": "unseen_seed202",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 606,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed303_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed606_unseen_seed303_100ep",
+      "split_id": "unseen_seed303",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 606,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed404_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed606_unseen_seed404_100ep",
+      "split_id": "unseen_seed404",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 606,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed505_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed606_unseen_seed505_100ep",
+      "split_id": "unseen_seed505",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 707,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_dynamic_config_no_assist.yaml",
+      "expected_scene": "03_DynamicMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed707_seen_seed42_100ep",
+      "split_id": "seen_seed42",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 707,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_config_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed707_unseen_seed101_100ep",
+      "split_id": "unseen_seed101",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 707,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed202_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed707_unseen_seed202_100ep",
+      "split_id": "unseen_seed202",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 707,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed303_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed707_unseen_seed303_100ep",
+      "split_id": "unseen_seed303",
+      "valid": true
+    },
+    {
+      "completed_episodes": 100,
+      "evaluation_seed": 707,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed404_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed707_unseen_seed404_100ep",
+      "split_id": "unseen_seed404",
+      "valid": true
+    },
+    {
+      "completed_episodes": 101,
+      "evaluation_seed": 707,
+      "expected_reward_config": "reward_v5_active_agents.yaml",
+      "expected_rule_config": "maze_unseen_eval_seed505_no_assist.yaml",
+      "expected_scene": "04_Eval_UnseenMaze_3v2",
+      "problems": [],
+      "run_id": "LB_3v2_publication_eval_assist_off_v2_policyseed707_unseen_seed505_100ep",
+      "split_id": "unseen_seed505",
+      "valid": true
+    }
+  ],
+  "schema_version": 1,
+  "topology_provenance_enforced": true,
+  "valid": true
+}

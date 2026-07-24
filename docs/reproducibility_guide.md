@@ -158,17 +158,19 @@ provenance are excluded.
 
 ```bash
 python scripts/audit_publication_readiness.py
+python scripts/build_current_evidence_snapshot.py
 cd paper
-pdflatex -interaction=nonstopmode -halt-on-error \
-  -output-directory=../output/pdf labyrinth_breach_journal.tex
-pdflatex -interaction=nonstopmode -halt-on-error \
-  -output-directory=../output/pdf labyrinth_breach_journal.tex
+latexmk -pdf -interaction=nonstopmode -halt-on-error \
+  labyrinth_breach_journal.tex
+cp labyrinth_breach_journal.pdf labyrinth_breach_revised_publication_report.pdf
 ```
 
 The readiness audit must report `READY_FOR_SUBMISSION_REVIEW`. A manuscript PDF
 alone is not readiness: official training, fixed-count evaluation, and all five
 paired ablation analyses must also pass. The final PDF is
-`output/pdf/labyrinth_breach_journal.pdf`.
+`paper/labyrinth_breach_revised_publication_report.pdf`. The current
+no-retraining snapshot is generated under
+`results/official_summary/current_evidence_snapshot.*`.
 
 After all gates pass, build the hashed evidence pack:
 

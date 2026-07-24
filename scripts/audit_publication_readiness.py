@@ -32,6 +32,14 @@ def audit_passed(path: Path) -> tuple[bool, str]:
     if "failed" in data:
         passed = int(data.get("failed", 1)) == 0
         return passed, f"{data.get('passed', 0)} passed, {data.get('failed', 0)} failed"
+    if "valid" in data:
+        passed = data.get("valid") is True
+        problems = data.get("problems") or []
+        expected_rows = data.get("expected_matrix_rows")
+        observed_rows = data.get("observed_matrix_rows")
+        if expected_rows is not None and observed_rows is not None:
+            return passed, f"{observed_rows}/{expected_rows} cells valid, {len(problems)} problems"
+        return passed, f"{len(problems)} problems"
     passed = data.get("passed") is True
     checks = data.get("checks") or []
     return passed, f"{sum(item.get('passed') is True for item in checks)}/{len(checks)} checks passed"
@@ -108,9 +116,19 @@ def main() -> int:
         passed, evidence = audit_passed(ROOT / relative)
         add_gate(gates, gate_id, passed, evidence)
 
-    paper_path = ROOT / "output/pdf/labyrinth_breach_journal.pdf"
+    paper_candidates = [
+        ROOT / "output/pdf/labyrinth_breach_journal.pdf",
+        ROOT / "paper/labyrinth_breach_journal.pdf",
+        ROOT / "paper/labyrinth_breach_revised_publication_report.pdf",
+    ]
+    paper_path = next((path for path in paper_candidates if path.is_file()), paper_candidates[0])
     pages = pdf_pages(paper_path)
-    add_gate(gates, "journal_manuscript", pages >= 10, f"{pages} rendered IEEE pages")
+    add_gate(
+        gates,
+        "journal_manuscript",
+        pages >= 10,
+        f"{pages} rendered IEEE pages from {paper_path.relative_to(ROOT)}",
+    )
 
     literature = (ROOT / "docs/literature_review_2020_2026.md").read_text(encoding="utf-8")
     full_reviews = sum(

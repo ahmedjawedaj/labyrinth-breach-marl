@@ -1,0 +1,175 @@
+{
+  "blocking_gate_ids": [
+    "ablation_results"
+  ],
+  "completed_ablation_effects": [
+    {
+      "ablation_id": "action_assist_on",
+      "bootstrap_high": 0.0444,
+      "bootstrap_low": -0.0688,
+      "delta": -0.012590099009900985,
+      "group": "unseen",
+      "matched_cells": 25,
+      "metric": "sentinel_win",
+      "paired_effect_dz": -0.16877687829130858
+    },
+    {
+      "ablation_id": "action_assist_on",
+      "bootstrap_high": 0.0738339603960396,
+      "bootstrap_low": -0.036399999999999995,
+      "delta": 0.018225742574257412,
+      "group": "unseen",
+      "matched_cells": 25,
+      "metric": "escape",
+      "paired_effect_dz": 0.25058039955739975
+    },
+    {
+      "ablation_id": "action_assist_on",
+      "bootstrap_high": -0.01077232218418054,
+      "bootstrap_low": -0.2896902578186203,
+      "delta": -0.15280184845682718,
+      "group": "unseen",
+      "matched_cells": 25,
+      "metric": "sentinel_spread_meters",
+      "paired_effect_dz": -0.48026482895806893
+    },
+    {
+      "ablation_id": "dynamic_wall_off",
+      "bootstrap_high": 0.0721829702970297,
+      "bootstrap_low": -0.027370792079207916,
+      "delta": 0.02060990099009902,
+      "group": "unseen",
+      "matched_cells": 25,
+      "metric": "sentinel_win",
+      "paired_effect_dz": 0.29205485964835987
+    },
+    {
+      "ablation_id": "dynamic_wall_off",
+      "bootstrap_high": 0.045200000000000004,
+      "bootstrap_low": 0.0108,
+      "delta": 0.02751683168316832,
+      "group": "unseen",
+      "matched_cells": 25,
+      "metric": "pincer_episode_rate",
+      "paired_effect_dz": 0.6336594755892001
+    },
+    {
+      "ablation_id": "dynamic_wall_off",
+      "bootstrap_high": 0.045849504950495036,
+      "bootstrap_low": 0.0020000000000000083,
+      "delta": 0.023449504950495043,
+      "group": "unseen",
+      "matched_cells": 25,
+      "metric": "exit_denial_episode_rate",
+      "paired_effect_dz": 0.4476185233688805
+    },
+    {
+      "ablation_id": "dynamic_wall_off",
+      "bootstrap_high": 0.054000000000000006,
+      "bootstrap_low": 0.0108,
+      "delta": 0.03163168316831684,
+      "group": "unseen",
+      "matched_cells": 25,
+      "metric": "trap_episode_rate",
+      "paired_effect_dz": 0.7610428013338042
+    },
+    {
+      "ablation_id": "dynamic_wall_off",
+      "bootstrap_high": -0.03769975038568969,
+      "bootstrap_low": -0.08765858379039534,
+      "delta": -0.06455979400559214,
+      "group": "unseen",
+      "matched_cells": 25,
+      "metric": "stall_step_fraction",
+      "paired_effect_dz": -1.2100682598043315
+    }
+  ],
+  "generated_utc": "2026-07-24T09:09:13.691682+00:00",
+  "lightweight_baselines": [
+    {
+      "cells": 1,
+      "controller": "heuristic",
+      "episodes": 26,
+      "escape_rate_mean": 0.2692307692307692,
+      "full_capture_seconds_mean": 10.176421052631577,
+      "group": "seen",
+      "pincer_episode_rate_mean": 0.2692307692307692,
+      "sentinel_win_rate_mean": 0.7307692307692307
+    },
+    {
+      "cells": 5,
+      "controller": "heuristic",
+      "episodes": 126,
+      "escape_rate_mean": 0.30123076923076925,
+      "full_capture_seconds_mean": 8.740360520787261,
+      "group": "unseen",
+      "pincer_episode_rate_mean": 0.26276923076923075,
+      "sentinel_win_rate_mean": 0.6827692307692308
+    },
+    {
+      "cells": 1,
+      "controller": "random",
+      "episodes": 25,
+      "escape_rate_mean": 0.48,
+      "full_capture_seconds_mean": 106.041625,
+      "group": "seen",
+      "pincer_episode_rate_mean": 0.16,
+      "sentinel_win_rate_mean": 0.32
+    },
+    {
+      "cells": 5,
+      "controller": "random",
+      "episodes": 125,
+      "escape_rate_mean": 0.44800000000000006,
+      "full_capture_seconds_mean": 103.02635000000001,
+      "group": "unseen",
+      "pincer_episode_rate_mean": 0.088,
+      "sentinel_win_rate_mean": 0.272
+    }
+  ],
+  "official_evaluation": {
+    "seen": {
+      "episodes": 501,
+      "escape_rate": 0.5289421157684631,
+      "escapes": 265,
+      "mean_full_capture_seconds": 23.66205769230769,
+      "runner_win_rate": 0.5848303393213573,
+      "runner_wins": 293,
+      "sentinel_win_rate": 0.4151696606786427,
+      "sentinel_win_rate_wilson_95_ci": [
+        0.3728263882362966,
+        0.45880396869150003
+      ],
+      "sentinel_wins": 208
+    },
+    "unseen": {
+      "episodes": 2501,
+      "escape_rate": 0.5345861655337865,
+      "escapes": 1337,
+      "mean_full_capture_seconds": 22.767663507108967,
+      "runner_win_rate": 0.5781687325069972,
+      "runner_wins": 1446,
+      "sentinel_win_rate": 0.4218312674930028,
+      "sentinel_win_rate_wilson_95_ci": [
+        0.4026105069716219,
+        0.44129179806834556
+      ],
+      "sentinel_wins": 1055
+    }
+  },
+  "passed_gates": 15,
+  "readiness_status": "BLOCKED",
+  "remaining_with_retraining": [
+    "memory off paired retraining",
+    "tactical reward off paired retraining",
+    "direct dynamic training paired retraining"
+  ],
+  "remaining_without_retraining": [
+    "tighten claims and threat framing",
+    "strengthen literature synthesis",
+    "keep random and heuristic controls as diagnostic only",
+    "maintain script-to-table traceability"
+  ],
+  "schema_version": 1,
+  "total_gates": 16
+}

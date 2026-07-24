@@ -28,10 +28,13 @@ topologies. Every policy-topology cell targets 100 completed episodes.
 | Pincer episode rate | 22.6% +/- 4.5 | 20.3% +/- 4.5 |
 | Exit denial rate | 42.7% +/- 3.3 | 39.2% +/- 4.7 |
 
-The full journal submission evidence pack is still blocked because only two of
-five registered paired ablation families are complete. The current paper should
-therefore be treated as a strong advisor-review / preprint draft, not as a
-finished journal submission package. See
+The current readiness audit passes 15/16 gates. The full journal submission
+evidence pack is still blocked because only two of five registered paired
+ablation families are complete. The current paper should therefore be treated as
+a strong advisor-review or preprint draft, not as a finished journal submission
+package. See
+[`results/official_summary/current_evidence_snapshot.md`](results/official_summary/current_evidence_snapshot.md)
+and
 [`docs/publication_pause_conclusion_2026-07-18.md`](docs/publication_pause_conclusion_2026-07-18.md).
 
 ### Lightweight Baseline Diagnostics
@@ -54,6 +57,21 @@ as part of a formal journal evidence pack.
 These rows are diagnostic controls, not matched-compute learned SOTA baselines.
 They show that learned PPO is better than random action selection, while a
 privileged hand-coded geometric controller still captures faster.
+
+## Current No-Retraining Upgrade
+
+The no-retraining publication pass adds the following reviewer-facing evidence:
+
+- A 17-page IEEE-style manuscript PDF with methodology, environment, and policy
+  architecture diagrams.
+- A refreshed readiness audit that recognizes the current manuscript PDF and the
+  valid 30-cell canonical evaluation.
+- A current evidence snapshot under
+  `results/official_summary/current_evidence_snapshot.*`.
+- A lightweight baseline aggregate regenerated from existing random and
+  geometric-heuristic evaluation cells.
+- A clearer boundary between completed evidence and the three retraining-only
+  ablation gaps.
 
 ## Project Structure
 

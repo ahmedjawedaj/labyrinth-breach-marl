@@ -1,0 +1,108 @@
+{
+  "blocking_gate_ids": [
+    "ablation_results"
+  ],
+  "gates": [
+    {
+      "blocking": true,
+      "evidence": "25 passed, 0 failed",
+      "id": "implementation_audit",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "11 passed, 0 failed",
+      "id": "training_budget_audit",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "10 passed, 0 failed",
+      "id": "evaluation_control_audit",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "8 passed, 0 failed",
+      "id": "reward_control_audit",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "8/8 checks passed",
+      "id": "memory_control_audit",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "6/6 checks passed",
+      "id": "assist_control_audit",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "6/6 checks passed",
+      "id": "wall_control_audit",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "17 rendered IEEE pages from paper/labyrinth_breach_journal.pdf",
+      "id": "journal_manuscript",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "13 full primary-paper reviews",
+      "id": "recent_literature",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "5/5 conditions and 9 directional hypotheses registered",
+      "id": "ablation_protocol",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "episode-keyed paths, survival, reacquisition, spatial/route response, gaps, and variance",
+      "id": "metric_protocol_v2",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "n=3: |dz|=3.264, n=5: |dz|=1.682, n=10: |dz|=0.996",
+      "id": "statistical_power_audit",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "20/20 audited runs complete",
+      "id": "official_training",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "seeds=[42, 101, 202, 606, 707], raw_rows=28320, diagnostic_mode=False",
+      "id": "official_training_curves",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "30/30 cells valid, 0 problems",
+      "id": "official_evaluation",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
+      "evidence": "2/5 paired analyses complete",
+      "id": "ablation_results",
+      "status": "BLOCKED"
+    }
+  ],
+  "generated_utc": "2026-07-24T09:09:08.747478+00:00",
+  "passed_gates": 15,
+  "schema_version": 1,
+  "status": "BLOCKED",
+  "total_gates": 16
+}

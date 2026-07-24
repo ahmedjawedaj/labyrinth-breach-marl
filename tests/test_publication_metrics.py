@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from analyze_experiment_power import minimum_detectable_effect  # noqa: E402
+from audit_publication_readiness import audit_passed  # noqa: E402
 from analyze_publication_statistics import (  # noqa: E402
     bootstrap_policy_generalization_gap,
     hierarchical_bootstrap,
@@ -50,6 +51,24 @@ def write_csv(path: Path, fieldnames: list[str], rows: list[dict]) -> None:
 
 
 class PublicationMetricTests(unittest.TestCase):
+    def test_readiness_audit_accepts_valid_matrix_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "publication_eval_audit.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "valid": True,
+                        "expected_matrix_rows": 30,
+                        "observed_matrix_rows": 30,
+                        "problems": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            passed, evidence = audit_passed(path)
+            self.assertTrue(passed)
+            self.assertIn("30/30 cells valid", evidence)
+
     def test_campaign_evaluation_completion_requires_artifact_integrity(self) -> None:
         status = {"success": True, "completed_episodes": 100, "target_episodes": 100}
         with tempfile.TemporaryDirectory() as temp_dir:

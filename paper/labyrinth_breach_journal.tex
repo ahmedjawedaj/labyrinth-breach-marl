@@ -40,7 +40,7 @@
 \maketitle
 
 \begin{abstract}
-We present Labyrinth Breach, a configurable Unity ML-Agents benchmark for asymmetric multi-agent pursuit-evasion in dynamic maze environments. Three Sentinel agents cooperatively pursue two Runner agents across a seeded training maze and procedurally generated held-out topologies with shifting walls, exit zones, and partial observability. Agents observe through vector states, a 360-degree planar horizontal ray fan, and last-known-position memory, and are trained with PPO and asymmetric self-play under a tactical reward-shaping framework designed to reduce free-rider collapse, cluster convergence, and passive evasion. Beyond the environment itself, we contribute an auditable evaluation pipeline that routes raw Unity logs into run-scoped artifacts, computes outcome and coordination metrics, and supports multi-seed seen/unseen layout evaluation and ablation studies. Preliminary legacy runs suggest that curriculum training improves behavior as environments progress from open arenas to dynamic mazes, but publication-grade claims require the stricter multi-seed protocol described in this paper. The source code and trained models are publicly available.\footnote{\url{https://github.com/ahmedjawedaj/labyrinth-breach-marl}} A demonstration video of trained agents in the dynamic maze is available online.\footnote{\url{https://drive.google.com/file/d/1sxzKtpvVNh_UYYxchMTZzzZNKLDyh09w/view}}
+We present Labyrinth Breach, a configurable Unity ML-Agents benchmark for asymmetric multi-agent pursuit-evasion in dynamic maze environments. Three Sentinel agents cooperatively pursue two Runner agents across a seeded training maze and procedurally generated held-out topologies with shifting walls, exit zones, and partial observability. Agents observe through vector states, a 360-degree planar horizontal ray fan, and last-known-position memory, and are trained with PPO and asymmetric self-play under a tactical reward-shaping framework designed to reduce free-rider collapse, cluster convergence, and passive evasion. Beyond the environment itself, we contribute an auditable evaluation pipeline that routes raw Unity logs into run-scoped artifacts, computes outcome and coordination metrics, and supports multi-seed seen/unseen layout evaluation and ablation studies. The current evidence includes five independently trained curriculum policy seeds, 30 canonical assist-off evaluation cells, 3,002 completed evaluation episodes, low-cost random and geometric-heuristic diagnostic baselines, and two completed paired deployment interventions. The remaining publication blocker is empirical rather than structural: three retraining-dependent ablation families are registered but incomplete. The source code and trained models are publicly available.\footnote{\url{https://github.com/ahmedjawedaj/labyrinth-breach-marl}} A demonstration video of trained agents in the dynamic maze is available online.\footnote{\url{https://drive.google.com/file/d/1sxzKtpvVNh_UYYxchMTZzzZNKLDyh09w/view}}
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -66,9 +66,9 @@ Our contributions are as follows:
     \item A reproducible evaluation and evidence pipeline for multi-seed seen/unseen testing, coordination metrics, and ablations over memory, tactical rewards, dynamic walls, curriculum, and action assistance.
 \end{itemize}
 
-The study is organized around three research questions. \textbf{RQ1} asks whether a staged curriculum can produce competent policies as navigation complexity increases from an open arena to a dynamically changing maze. \textbf{RQ2} asks how strongly a fixed policy depends on maze geometry when transferred to held-out procedural layouts. \textbf{RQ3} asks which design elements, including memory, tactical reward shaping, wall dynamics, curriculum transfer, and action assistance, are responsible for observed performance and coordination. The current artifact answers only the pipeline-validity and fixed-checkpoint part of RQ2. RQ1 and RQ3 require the independent-seed and ablation experiments specified later in this article.
+The study is organized around three research questions. \textbf{RQ1} asks whether a staged curriculum can produce competent policies as navigation complexity increases from an open arena to a dynamically changing maze. \textbf{RQ2} asks how strongly a fixed policy depends on maze geometry when transferred to held-out procedural layouts. \textbf{RQ3} asks which design elements, including memory, tactical reward shaping, wall dynamics, curriculum transfer, and action assistance, are responsible for observed performance and coordination. The current artifact answers the fixed-count five-seed evaluation component of RQ2 and the deployment-time portions of RQ3 for dynamic walls and action assistance. The curriculum, memory, and tactical-reward mechanism claims remain open because their paired ablations require retraining.
 
-This distinction between a \emph{benchmark contribution}, a \emph{validated diagnostic}, and a \emph{completed empirical study} is important. The environment and evidence pipeline are implemented and auditable. The diagnostic establishes that a legacy policy can execute under the corrected protocol. The final comparative claims remain hypotheses until the official experiment matrix is complete. We therefore report positive and negative evidence, including a layout where the fixed policy performs poorly, and avoid treating successful execution as proof of robust generalization.
+This distinction between a \emph{benchmark contribution}, a \emph{validated diagnostic}, and a \emph{completed empirical study} is important. The environment, training pipeline, canonical evaluation, and two intervention analyses are implemented and auditable. Three retraining ablations remain incomplete, so the paper frames Labyrinth Breach as a reproducible simulation benchmark and empirical progress report rather than a finished claim that the learned controller is state of the art.
 
 % ============================================================
 \section{Related Work}
@@ -659,12 +659,12 @@ The memory intervention is a system-level ablation rather than a neural-input-on
 paused on 2026-07-18 after completing the official curriculum baseline, the
 canonical assist-off evaluation, and two deployment-time paired ablations. The
 strict campaign tracker reported 47/65 training runs and 90/180 target-complete
-evaluation cells. The publication-readiness audit passed 14/16 gates. The two
-remaining blockers were official evaluation completeness for unfinished
-ablation families and paired ablation completeness: only two of five planned
-paired analyses were complete. Consequently, this section reports the
-completed evidence honestly and does not claim completion of the full journal
-experiment matrix.
+evaluation cells. After the no-retraining polish pass, the publication-readiness
+audit passes 15/16 gates because the canonical evaluation audit is valid and
+the manuscript PDF is routed correctly. The remaining blocker is paired
+ablation completeness: only two of five planned paired analyses are complete.
+Consequently, this section reports the completed evidence honestly and does not
+claim completion of the full journal experiment matrix.
 
 The official five-seed curriculum baseline reached 20/20 audited training
 runs. Figure~\ref{fig:official_training_reward} summarizes the exported
@@ -1037,27 +1037,82 @@ The excluded audit motivates three hypotheses. It does not support completed fin
 
 Compared to MatrixWorld~\cite{matrixworld2023}, which provides a grid-based pursuit-evasion benchmark, Labyrinth Breach operates in continuous 3D space with asymmetric teams, dynamic walls, and exit-based objectives. Compared to ViPER~\cite{viper2025}, which focuses on visibility-based pursuit, our environment adds team coordination pressure through the 3v2 asymmetry and tactical reward terms.
 
+\textbf{Submission scope.} The strongest current venue framing is a reproducible
+simulation benchmark and empirical study for multidisciplinary robotics and AI
+readers. The manuscript should not be submitted as a hardware robotics paper,
+nor as a new MARL algorithm paper. The defensible novelty is the combination of
+asymmetric learned teams, dynamic topology, exit-directed evasion, partial
+observation, explicit reward provenance, and artifact-gated evaluation. The
+remaining retraining ablations determine whether the paper can claim mechanism
+evidence for memory, tactical rewards, and curriculum transfer.
+
 % ============================================================
 \section{Code, Data, and Reproducibility}
 % ============================================================
 
 The source repository contains the Unity project, ML-Agents trainer manifests, reward/rule/curriculum YAML files, Python launchers, audit scripts, unit tests, manuscript source, and generated summary artifacts. The public URL is given in the abstract footnote. The intended reproduction path is documented in \texttt{docs/reproducibility\_guide.md}: build the Unity \texttt{6000.0.40f1} standalone, run the prelaunch validation gates, resume the official curriculum/evaluation/ablation launchers, export KPI summaries, rerun readiness audits, and compile the paper. The Python environment is specified by \texttt{environment.yml} and \texttt{requirements.txt}. The core versions are Unity ML-Agents package \texttt{com.unity.ml-agents@4.0.0}, Python \texttt{3.10.12}, \texttt{mlagents==1.1.0}, and \texttt{torch==2.2.1}.
 
-The current PDF is generated from the journal \LaTeX{} source under \texttt{paper/}. Official evaluation results are read from the publication-evaluation aggregate directory. Learning curves and paired ablations are read from the official-summary directory. The codebase includes unit tests under \texttt{tests/}. The last local validation for the publication pipeline previously passed the repository test suite, and the final manuscript build in this revision was rendered twice with \texttt{pdflatex}. The evidence-pack builder \texttt{build\_publication\_evidence\_pack.py} creates a hashed archive with \texttt{artifact\_manifest.json} and \texttt{SHA256SUMS}, but it is intentionally blocked for a formal submission pack until all readiness gates pass. This prevents an incomplete ablation matrix from being packaged as final journal evidence.
+The current PDF is generated from the journal \LaTeX{} source under \texttt{paper/}. Official evaluation results are read from the publication-evaluation aggregate directory. Learning curves and paired ablations are read from the official-summary directory. The codebase includes unit tests under \texttt{tests/}. The no-retraining evidence snapshot is generated by the current-evidence snapshot script. The evidence-pack builder creates a hashed archive with \texttt{artifact\_manifest.json} and \texttt{SHA256SUMS}, but it is intentionally blocked for a formal submission pack until all readiness gates pass. This prevents an incomplete ablation matrix from being packaged as final journal evidence.
+
+\begin{table*}[t]
+\centering
+\caption{Claim-to-artifact traceability for the current no-retraining manuscript.}
+\label{tab:traceability}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{3.1cm}p{5.1cm}p{5.4cm}}
+\toprule
+Manuscript item & Source artifact & Regeneration command \\
+\midrule
+Five-seed learning curves & \path{results/official_summary/training_curves/} & \path{scripts/analyze_official_training_curves.py} \\
+Canonical evaluation table & \path{results/publication_eval_official/aggregate/} & \path{scripts/run_publication_eval_matrix.py} \\
+Random and heuristic diagnostics & \path{results/lightweight_baselines/aggregate/} & \path{scripts/run_lightweight_baseline_eval.py} \\
+Action-assist intervention & \path{results/official_summary/ablations/action_assist_on/} & \path{scripts/analyze_paired_ablation.py} \\
+Dynamic-wall intervention & \path{results/official_summary/ablations/dynamic_wall_off/} & \path{scripts/analyze_paired_ablation.py} \\
+Readiness status & \path{results/official_summary/publication_readiness.json} & \path{scripts/audit_publication_readiness.py} \\
+Current evidence snapshot & \path{results/official_summary/current_evidence_snapshot.*} & \path{scripts/build_current_evidence_snapshot.py} \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
 This revision also includes a low-effort random-action and geometric-heuristic baseline harness for evaluation-only diagnostics. Those rows are generated through the same fixed-checkpoint ML-Agents launch path and KPI summarizer, with Unity overriding policy actions at runtime. Their retained evidence level is KPI/metadata summaries plus aggregate CSV/JSON outputs, so they are reported as diagnostic controls rather than a formal matched-compute SOTA comparison. A full journal evidence pack should rerun the baseline cells with raw CSV log retention enabled or replace them with a learned MARL baseline under equalized compute.
 
 % ============================================================
-\section{Limitations and Future Work}
+\section{Limitations and Threats to Validity}
 % ============================================================
 
 Several limitations remain. First, the current study is simulation-only and does not include physical robot validation. Second, wall collision correctness under all dynamic shift configurations has not been exhaustively validated. Rare edge cases during wall transitions could allow agents to clip through geometry. Third, the tactical reward shaping terms add complexity to the reward landscape and could be exploited in ways not yet detected. Fourth, the current architecture uses last-known-position memory rather than recurrent neural memory, which may limit performance in highly dynamic environments. Fifth, the controller includes optional action-assist blending. Canonical results are assist-off and must be accompanied by the registered assist-on intervention.
+
+\begin{table}[t]
+\centering
+\caption{Main validity threats and current mitigation.}
+\label{tab:validity_threats}
+\footnotesize
+\begin{tabular}{p{2.3cm}p{5.0cm}}
+\toprule
+Threat & Mitigation in this version \\
+\midrule
+Simulation scope & Claims are limited to Unity simulation and no hardware transfer is claimed \\
+Seed power & Five policy seeds are reported, but the power audit still marks small effects as hard to resolve \\
+Baseline scope & Random and heuristic controllers are diagnostic controls rather than learned SOTA baselines \\
+Reward confounding & Reward events are logged and paired tactical-reward retraining remains a required gate \\
+Assisted control & Canonical results are assist-off and the assist-on intervention is reported separately \\
+Topology transfer & Held-out topology seeds are recorded and per-topology evaluation is preserved \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Future work should prioritize the three remaining retraining ablations, a
+matched-compute learned MARL baseline, recurrent or belief-state memory, and
+stress tests for wall-transition safety. SHAP-style attribution is also useful,
+but it should group features by semantic channels before producing visual
+explanations.
 
 % ============================================================
 \section{Conclusion}
 % ============================================================
 
-We presented Labyrinth Breach, a reproducible Unity ML-Agents benchmark for asymmetric multi-agent pursuit-evasion with dynamic topology, partial observation, exit-directed evasion, and tactical reward shaping. Legacy results motivate curriculum and reward hypotheses, but final claims require the registered multi-seed evaluation and ablations. The environment, configurations, logging pipeline, and checkpoints are public for reproduction and extension.
+We presented Labyrinth Breach, a reproducible Unity ML-Agents benchmark for asymmetric multi-agent pursuit-evasion with dynamic topology, partial observation, exit-directed evasion, and tactical reward shaping. The upgraded evidence now includes audited five-seed training curves, a 30-cell canonical assist-off evaluation, lightweight diagnostic baselines, and two completed deployment-time interventions. The benchmark is not solved: Runner wins and escapes remain common, and a geometric heuristic captures faster than the current PPO policy. This makes Labyrinth Breach useful as a controlled benchmark, while the remaining retraining ablations define the path from advisor-review draft to final journal evidence package.
 
 \bibliographystyle{IEEEtran}
 \IEEEtriggeratref{28}

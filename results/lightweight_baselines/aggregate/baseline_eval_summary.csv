@@ -1,0 +1,13 @@
+baseline_policy,source_run_id,evaluation_seed,split_id,group,run_id,episodes,sentinel_win_rate,runner_win_rate,escape_rate,mean_time_to_first_capture_seconds,mean_time_to_full_capture_seconds,pincer_episode_rate,corridor_block_episode_rate,exit_denial_episode_rate,trap_success_rate
+random,LB_3v2_official_seed42_stage4,42,seen_seed42,seen,LB_lightweight_random_seen_seed42_25ep_seed42,25,0.32,0.68,0.48,48.8541875,106.041625,0.16,0.0,0.2,0.0
+random,LB_3v2_official_seed42_stage4,42,unseen_seed101,unseen,LB_lightweight_random_unseen_seed101_25ep_seed42,25,0.2,0.8,0.48,52.05882352941176,117.2,0.16,0.0,0.44,0.0
+random,LB_3v2_official_seed42_stage4,42,unseen_seed202,unseen,LB_lightweight_random_unseen_seed202_25ep_seed42,25,0.32,0.68,0.48,43.42864285714286,103.16675,0.08,0.0,0.4,0.0
+random,LB_3v2_official_seed42_stage4,42,unseen_seed303,unseen,LB_lightweight_random_unseen_seed303_25ep_seed42,25,0.28,0.72,0.4,52.737842105263155,88.52671428571429,0.04,0.0,0.4,0.0
+random,LB_3v2_official_seed42_stage4,42,unseen_seed404,unseen,LB_lightweight_random_unseen_seed404_25ep_seed42,25,0.28,0.72,0.48,46.934599999999996,115.143,0.08,0.0,0.24,0.0
+random,LB_3v2_official_seed42_stage4,42,unseen_seed505,unseen,LB_lightweight_random_unseen_seed505_25ep_seed42,25,0.28,0.72,0.4,57.251250000000006,91.09528571428572,0.08,0.0,0.24,0.0
+heuristic,LB_3v2_official_seed42_stage4,42,seen_seed42,seen,LB_lightweight_heuristic_seen_seed42_25ep_seed42,26,0.7307692307692307,0.2692307692307692,0.2692307692307692,5.540571428571429,10.176421052631577,0.2692307692307692,0.0,0.34615384615384615,0.0
+heuristic,LB_3v2_official_seed42_stage4,42,unseen_seed101,unseen,LB_lightweight_heuristic_unseen_seed101_25ep_seed42,25,0.76,0.24,0.2,5.016045454545455,8.89578947368421,0.32,0.04,0.32,0.0
+heuristic,LB_3v2_official_seed42_stage4,42,unseen_seed202,unseen,LB_lightweight_heuristic_unseen_seed202_25ep_seed42,25,0.56,0.44,0.4,4.588238095238095,8.16792857142857,0.28,0.0,0.28,0.0
+heuristic,LB_3v2_official_seed42_stage4,42,unseen_seed303,unseen,LB_lightweight_heuristic_unseen_seed303_25ep_seed42,26,0.6538461538461539,0.34615384615384615,0.34615384615384615,5.864,9.079647058823529,0.15384615384615385,0.0,0.2692307692307692,0.0
+heuristic,LB_3v2_official_seed42_stage4,42,unseen_seed404,unseen,LB_lightweight_heuristic_unseen_seed404_25ep_seed42,25,0.8,0.2,0.2,4.8411904761904765,8.1,0.44,0.04,0.36,0.0
+heuristic,LB_3v2_official_seed42_stage4,42,unseen_seed505,unseen,LB_lightweight_heuristic_unseen_seed505_25ep_seed42,25,0.64,0.36,0.36,5.858,9.4584375,0.12,0.0,0.32,0.0
