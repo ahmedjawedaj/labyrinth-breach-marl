@@ -23,8 +23,9 @@ PROCESS_PATTERNS = [
 STEP_RE = re.compile(
     r"^\[INFO\]\s+(?P<behavior>\w+)\.\s+Step:\s+(?P<step>\d+)\.\s+"
     r"Time Elapsed:\s+(?P<elapsed>\d+(?:\.\d+)?)\s+s\.\s+Mean Reward:\s+"
-    r"(?P<reward>-?\d+(?:\.\d+)?).*?(?:ELO:\s+(?P<elo>-?\d+(?:\.\d+)?))?\."
+    r"(?P<reward>-?\d+(?:\.\d+)?)"
 )
+ELO_RE = re.compile(r"ELO:\s+(?P<elo>-?\d+(?:\.\d+)?)")
 EXPORT_RE = re.compile(r"(?P<behavior>Runner|Sentinel)-(?P<step>\d+)\.(?:onnx|pt)$")
 
 
@@ -84,15 +85,17 @@ def parse_training_log(path: Path) -> dict[str, Any]:
     exists = path.exists()
     if exists:
         for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
-            match = STEP_RE.match(line.strip())
+            stripped = line.strip()
+            match = STEP_RE.match(stripped)
             if not match:
                 continue
+            elo_match = ELO_RE.search(stripped)
             behavior = match.group("behavior")
             latest[behavior] = {
                 "step": int(match.group("step")),
                 "elapsed_seconds": float(match.group("elapsed")),
                 "mean_reward": float(match.group("reward")),
-                "elo": float(match.group("elo")) if match.group("elo") else None,
+                "elo": float(elo_match.group("elo")) if elo_match else None,
             }
     return {
         "path": str(path.relative_to(ROOT)),
