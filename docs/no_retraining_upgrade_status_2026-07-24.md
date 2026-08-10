@@ -6,7 +6,7 @@ Date: 2026-07-24
 
 The publication pass improves the paper, references, traceability, and
 diagnostic evidence without starting new training. The current readiness audit
-passes 15 of 16 evidence checks. Memory off, tactical reward off, and direct
+passes all 16 required evidence checks. Memory off, tactical reward off, and direct
 dynamic training require paired retraining and are registered as extensions
 rather than used as primary evidence claims.
 

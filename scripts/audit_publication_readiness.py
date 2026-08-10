@@ -130,6 +130,41 @@ def main() -> int:
         f"{pages} rendered IEEE pages from {paper_path.relative_to(ROOT)}",
     )
 
+    paper_text = (ROOT / "paper/labyrinth_breach_journal.tex").read_text(encoding="utf-8")
+    expected_authors = [
+        "Ahmed Jawed",
+        "Imran Ashraf",
+        "Muhammad Sikander Raheem",
+        "Usman Irshad Bhatti",
+        "Arif Mahmood",
+        "Irene Delgado Noya",
+        "Eduardo Garcia Villena",
+    ]
+    highlights = ROOT / "paper/elsevier_highlights.txt"
+    highlights_ready = False
+    if highlights.is_file():
+        highlight_lines = [
+            line for line in highlights.read_text(encoding="utf-8").splitlines()
+            if line.strip().startswith("- ")
+        ]
+        highlights_ready = len(highlight_lines) == 5 and all(len(line.strip()[2:]) <= 85 for line in highlight_lines)
+    submission_materials_ready = (
+        all(author in paper_text for author in expected_authors)
+        and "Data and Code Availability" in paper_text
+        and "Author Contributions" in paper_text
+        and "Declaration of Competing Interest" in paper_text
+        and "Ethics Statement" in paper_text
+        and highlights_ready
+        and (ROOT / "paper/cover_letter_swarm_and_evolutionary_computation.md").is_file()
+        and (ROOT / "paper/cover_letter_robotics_and_autonomous_systems.md").is_file()
+    )
+    add_gate(
+        gates,
+        "submission_materials",
+        submission_materials_ready,
+        "author list, declarations, highlights, and journal cover letters",
+    )
+
     literature = (ROOT / "docs/literature_review_2020_2026.md").read_text(encoding="utf-8")
     full_reviews = sum(
         line.startswith("|") and "(**full review**" in line
@@ -240,12 +275,16 @@ def main() -> int:
 
     pending = [gate for gate in gates if gate["blocking"] and gate["status"] != "PASS"]
     extensions = [gate for gate in gates if not gate["blocking"] and gate["status"] != "PASS"]
+    required_gates = [gate for gate in gates if gate["blocking"]]
     payload = {
         "schema_version": 1,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
-        "status": "READY_FOR_SUBMISSION_REVIEW" if not pending and not extensions else "READY_WITH_DECLARED_SCOPE",
+        "status": "READY_FOR_SUBMISSION_REVIEW" if not pending else "ACTION_REQUIRED",
         "passed_gates": sum(gate["status"] == "PASS" for gate in gates),
         "total_gates": len(gates),
+        "required_passed_gates": sum(gate["status"] == "PASS" for gate in required_gates),
+        "total_required_gates": len(required_gates),
+        "registered_extension_count": len(extensions),
         "gates": gates,
         "pending_evidence_gate_ids": [gate["id"] for gate in pending],
         "registered_extension_gate_ids": [gate["id"] for gate in extensions],
@@ -258,6 +297,8 @@ def main() -> int:
         "# Publication Readiness",
         "",
         f"Status: **{payload['status']}**",
+        f"Required checks: **{payload['required_passed_gates']}/{payload['total_required_gates']}**",
+        f"Registered extensions outside current claims: **{payload['registered_extension_count']}**",
         "",
         "| Gate | Status | Evidence |",
         "|---|---|---|",
@@ -270,7 +311,7 @@ def main() -> int:
         lines.extend(["", "## Registered Extensions Outside Current Claims", ""])
         lines.extend(f"- `{gate['id']}`: {gate['evidence']}" for gate in extensions)
     OUTPUT_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"Publication readiness: {payload['passed_gates']}/{payload['total_gates']} gates passed")
+    print(f"Publication readiness: {payload['required_passed_gates']}/{payload['total_required_gates']} required gates passed")
     print(f"Status: {payload['status']}")
     print(f"Wrote: {OUTPUT_JSON}")
     print(f"Wrote: {OUTPUT_MD}")

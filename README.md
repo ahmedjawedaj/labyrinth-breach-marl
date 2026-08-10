@@ -28,9 +28,9 @@ topologies. Every policy-topology cell targets 100 completed episodes.
 | Pincer episode rate | 22.6% +/- 4.5 | 20.3% +/- 4.5 |
 | Exit denial rate | 42.7% +/- 3.3 | 39.2% +/- 4.7 |
 
-The current readiness audit passes 15/16 evidence checks. Two paired deployment
-interventions are reported in the manuscript, and three retraining interventions
-are registered as extensions rather than primary claims. See
+The current readiness audit passes 16/16 required evidence checks. Two paired
+deployment interventions are reported in the manuscript, and three retraining
+interventions are registered as extensions rather than primary claims. See
 [`results/official_summary/current_evidence_snapshot.md`](results/official_summary/current_evidence_snapshot.md)
 and
 [`docs/no_retraining_upgrade_status_2026-07-24.md`](docs/no_retraining_upgrade_status_2026-07-24.md).

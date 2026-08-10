@@ -112,7 +112,7 @@ def main() -> int:
     if not readiness_path.is_file():
         raise FileNotFoundError("Run scripts/audit_publication_readiness.py first.")
     readiness = json.loads(readiness_path.read_text(encoding="utf-8"))
-    if readiness.get("pending_evidence_gate_ids") and not args.allow_incomplete:
+    if readiness.get("status") != "READY_FOR_SUBMISSION_REVIEW" and not args.allow_incomplete:
         pending = ", ".join(readiness.get("pending_evidence_gate_ids") or readiness.get("blocking_gate_ids") or [])
         print(f"Evidence pack requires unresolved evidence gates or --allow-incomplete: {pending}", file=sys.stderr)
         return 2

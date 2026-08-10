@@ -1,9 +1,10 @@
 # Current Evidence Snapshot
 
-Generated UTC: `2026-08-10T09:37:36.375133+00:00`
+Generated UTC: `2026-08-10T09:52:29.700714+00:00`
 
-Readiness: **READY_WITH_DECLARED_SCOPE**
-Gates: **15/16**
+Readiness: **READY_FOR_SUBMISSION_REVIEW**
+Required checks: **16/16**
+All tracked checks: **16/17**
 Required evidence gates: `none`
 Registered extension gates: `ablation_results`
 

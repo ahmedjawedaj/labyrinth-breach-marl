@@ -1055,6 +1055,45 @@ semantic channels before producing visual explanations.
 
 We presented Labyrinth Breach, a reproducible Unity ML-Agents benchmark for asymmetric multi-agent pursuit-evasion with dynamic topology, partial observation, exit-directed evasion, and tactical reward shaping. The evidence includes audited five-seed training curves, a 30-cell canonical assist-off evaluation, control-policy baselines, and two paired deployment interventions. The benchmark remains challenging: Runner wins and escapes are common, and a geometric heuristic captures faster than the current PPO policy. These results support Labyrinth Breach as a controlled benchmark for studying asymmetric MARL behavior under changing topology and artifact-gated evaluation.
 
+% ============================================================
+\section*{Data and Code Availability}
+% ============================================================
+
+The source code, Unity project, training and evaluation launchers, manuscript
+source, and trained-model artifacts are available in the public repository
+listed in the abstract. The evaluation summaries used in the tables are stored
+in the official summary and publication-evaluation aggregate directories. The
+reproducibility guide describes the commands required to rebuild the Unity
+player, rerun the official evaluation matrix, regenerate figures and tables,
+and verify artifact hashes.
+
+\section*{Author Contributions}
+
+Ahmed Jawed: conceptualization, software, methodology, data curation, formal
+analysis, visualization, writing original draft. Imran Ashraf: supervision,
+methodology, validation, writing review and editing, corresponding author.
+Muhammad Sikander Raheem: software, validation, investigation, writing review
+and editing. Usman Irshad Bhatti: software, validation, investigation, writing
+review and editing. Arif Mahmood: supervision, methodology, validation, writing
+review and editing. Irene Delgado Noya: validation, visualization, writing
+review and editing. Eduardo Garcia Villena: validation, resources, writing
+review and editing.
+
+\section*{Declaration of Competing Interest}
+
+The authors declare no known competing financial interests or personal
+relationships that could have appeared to influence the work reported in this
+paper.
+
+\section*{Funding}
+
+The authors report no project-specific external funding for this study.
+
+\section*{Ethics Statement}
+
+This study uses a synthetic Unity simulation environment and does not involve
+human participants, animal subjects, or physical robot deployment.
+
 \bibliographystyle{IEEEtran}
 \IEEEtriggeratref{28}
 % Balance the final page for the verified bibliography.

@@ -51,6 +51,12 @@
     },
     {
       "blocking": true,
+      "evidence": "author list, declarations, highlights, and journal cover letters",
+      "id": "submission_materials",
+      "status": "PASS"
+    },
+    {
+      "blocking": true,
       "evidence": "13 full primary-paper reviews",
       "id": "recent_literature",
       "status": "PASS"
@@ -98,13 +104,16 @@
       "status": "REGISTERED_EXTENSION"
     }
   ],
-  "generated_utc": "2026-08-10T09:37:36.293441+00:00",
-  "passed_gates": 15,
+  "generated_utc": "2026-08-10T09:52:29.642052+00:00",
+  "passed_gates": 16,
   "pending_evidence_gate_ids": [],
+  "registered_extension_count": 1,
   "registered_extension_gate_ids": [
     "ablation_results"
   ],
+  "required_passed_gates": 16,
   "schema_version": 1,
-  "status": "READY_WITH_DECLARED_SCOPE",
-  "total_gates": 16
+  "status": "READY_FOR_SUBMISSION_REVIEW",
+  "total_gates": 17,
+  "total_required_gates": 16
 }

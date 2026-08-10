@@ -1,0 +1,7 @@
+Highlights
+
+- Introduces a reproducible Unity benchmark for 3v2 pursuit-evasion.
+- Tests dynamic maze topology, exits, partial observability, and self-play.
+- Reports five training seeds, 30 evaluation cells, and 3,002 episodes.
+- Adds audited logs, metric provenance, baselines, and paired interventions.
+- Shows a balanced benchmark where evasion remains common.

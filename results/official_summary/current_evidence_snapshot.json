@@ -81,7 +81,7 @@
       "paired_effect_dz": -1.2100682598043315
     }
   ],
-  "generated_utc": "2026-08-10T09:37:36.375133+00:00",
+  "generated_utc": "2026-08-10T09:52:29.700714+00:00",
   "lightweight_baselines": [
     {
       "cells": 1,
@@ -154,9 +154,10 @@
       "sentinel_wins": 1055
     }
   },
-  "passed_gates": 15,
+  "passed_gates": 16,
   "pending_evidence_gate_ids": [],
-  "readiness_status": "READY_WITH_DECLARED_SCOPE",
+  "readiness_status": "READY_FOR_SUBMISSION_REVIEW",
+  "registered_extension_count": 1,
   "registered_extension_gate_ids": [
     "ablation_results"
   ],
@@ -165,6 +166,7 @@
     "tactical reward off paired retraining",
     "direct dynamic training paired retraining"
   ],
+  "required_passed_gates": 16,
   "schema_version": 1,
   "submission_polish_without_retraining": [
     "tighten claims and threat framing",
@@ -172,5 +174,6 @@
     "keep random and heuristic controls as diagnostic only",
     "maintain script-to-table traceability"
   ],
-  "total_gates": 16
+  "total_gates": 17,
+  "total_required_gates": 16
 }

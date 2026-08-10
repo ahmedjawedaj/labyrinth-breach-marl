@@ -1,6 +1,8 @@
 # Publication Readiness
 
-Status: **READY_WITH_DECLARED_SCOPE**
+Status: **READY_FOR_SUBMISSION_REVIEW**
+Required checks: **16/16**
+Registered extensions outside current claims: **1**
 
 | Gate | Status | Evidence |
 |---|---|---|
@@ -12,6 +14,7 @@ Status: **READY_WITH_DECLARED_SCOPE**
 | assist_control_audit | PASS | 6/6 checks passed |
 | wall_control_audit | PASS | 6/6 checks passed |
 | journal_manuscript | PASS | 16 rendered IEEE pages from paper/labyrinth_breach_journal.pdf |
+| submission_materials | PASS | author list, declarations, highlights, and journal cover letters |
 | recent_literature | PASS | 13 full primary-paper reviews |
 | ablation_protocol | PASS | 5/5 conditions and 9 directional hypotheses registered |
 | metric_protocol_v2 | PASS | episode-keyed paths, survival, reacquisition, spatial/route response, gaps, and variance |

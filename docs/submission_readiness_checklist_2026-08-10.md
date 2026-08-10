@@ -22,6 +22,8 @@ controller performance.
 | Use current results | Manuscript uses five trained policy seeds, 30 canonical evaluation cells, 3,002 episodes, audited learning curves, lightweight controls, and two paired deployment interventions |
 | Improve reproducibility | Manuscript and docs map each claim to source artifacts and regeneration scripts |
 | Match submission author list | Manuscript and PDF include Ahmed Jawed, Imran Ashraf, Muhammad Sikander Raheem, Usman Irshad Bhatti, Arif Mahmood, Irene Delgado Noya, and Eduardo Garcia Villena |
+| Add Elsevier submission back matter | Manuscript includes data and code availability, conflict declaration, funding, author contributions, and ethics statement |
+| Add submission side files | Repository includes Elsevier highlights, journal-specific cover letters, and an internal reviewer-risk scorecard |
 | Remove legacy readiness language | Public manuscript, README, readiness summary, and evidence snapshot no longer contain internal caution wording |
 
 ## Ready Artifacts
@@ -32,6 +34,10 @@ controller performance.
 - `results/official_summary/current_evidence_snapshot.md`
 - `docs/reproducibility_guide.md`
 - `docs/no_retraining_upgrade_status_2026-07-24.md`
+- `paper/elsevier_highlights.txt`
+- `paper/cover_letter_swarm_and_evolutionary_computation.md`
+- `paper/cover_letter_robotics_and_autonomous_systems.md`
+- `docs/internal_reviewer_scorecard_2026-08-10.md`
 
 ## Current Evidence Boundary
 
