@@ -326,13 +326,25 @@ def build_status() -> dict[str, Any]:
 
 def next_action(active_processes: list[dict[str, str]], seed101_log: dict[str, Any]) -> str:
     if active_processes:
-        runner = seed101_log.get("latest_steps", {}).get("Runner", {})
-        step = runner.get("step")
-        eta = runner.get("estimated_seconds_remaining")
-        if step:
-            if eta is not None:
-                return f"wait for active training, latest Runner step {step}, estimated Runner ETA {format_duration(eta)}"
-            return f"wait for active training, latest Runner step {step}"
+        latest_steps = seed101_log.get("latest_steps", {})
+        if latest_steps:
+            slowest_behavior, slowest_row = max(
+                latest_steps.items(),
+                key=lambda item: (
+                    item[1].get("estimated_seconds_remaining")
+                    if item[1].get("estimated_seconds_remaining") is not None
+                    else item[1].get("remaining_steps", 0)
+                ),
+            )
+            step = slowest_row.get("step")
+            eta = slowest_row.get("estimated_seconds_remaining")
+            if step:
+                if eta is not None:
+                    return (
+                        f"wait for active training, slowest behavior {slowest_behavior} "
+                        f"step {step}, estimated ETA {format_duration(eta)}"
+                    )
+                return f"wait for active training, slowest behavior {slowest_behavior} step {step}"
         return "wait for active training"
     return "no active training process detected, inspect screen logs before starting evaluation"
 
