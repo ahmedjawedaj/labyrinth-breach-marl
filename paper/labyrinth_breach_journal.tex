@@ -40,7 +40,7 @@
 \maketitle
 
 \begin{abstract}
-We present Labyrinth Breach, a configurable Unity ML-Agents benchmark for asymmetric multi-agent pursuit-evasion in dynamic maze environments. Three Sentinel agents cooperatively pursue two Runner agents across a seeded training maze and procedurally generated held-out topologies with shifting walls, exit zones, and partial observability. Agents observe through vector states, a 360-degree planar horizontal ray fan, and last-known-position memory, and are trained with PPO and asymmetric self-play under a tactical reward-shaping framework designed to reduce free-rider collapse, cluster convergence, and passive evasion. Beyond the environment itself, we contribute an auditable evaluation pipeline that routes raw Unity logs into run-scoped artifacts, computes outcome and coordination metrics, and supports multi-seed seen/unseen layout evaluation and ablation studies. The current evidence includes five independently trained curriculum policy seeds, 30 canonical assist-off evaluation cells, 3,002 completed evaluation episodes, low-cost random and geometric-heuristic diagnostic baselines, and two completed paired deployment interventions. The remaining publication blocker is empirical rather than structural: three retraining-dependent ablation families are registered but incomplete. The source code and trained models are publicly available.\footnote{\url{https://github.com/ahmedjawedaj/labyrinth-breach-marl}} A demonstration video of trained agents in the dynamic maze is available online.\footnote{\url{https://drive.google.com/file/d/1sxzKtpvVNh_UYYxchMTZzzZNKLDyh09w/view}}
+We present Labyrinth Breach, a configurable Unity ML-Agents benchmark for asymmetric multi-agent pursuit-evasion in dynamic maze environments. Three Sentinel agents cooperatively pursue two Runner agents across a seeded training maze and procedurally generated held-out topologies with shifting walls, exit zones, and partial observability. Agents observe through vector states, a 360-degree planar horizontal ray fan, and last-known-position memory, and are trained with PPO and asymmetric self-play under a tactical reward-shaping framework designed to reduce free-rider collapse, cluster convergence, and passive evasion. Beyond the environment itself, we contribute an auditable evaluation pipeline that routes raw Unity logs into run-scoped artifacts, computes outcome and coordination metrics, and supports multi-seed seen/unseen layout evaluation and ablation studies. The empirical study includes five independently trained curriculum policy seeds, 30 canonical assist-off evaluation cells, 3,002 completed evaluation episodes, low-cost random and geometric-heuristic control policies, and two paired deployment interventions. The results show a balanced benchmark rather than a solved pursuit task: Runner wins remain common, held-out topology performance is comparable to seen-topology performance at the aggregate level, and dynamic walls alter tactical-event prevalence more clearly than terminal win rate. The source code and trained models are publicly available.\footnote{\url{https://github.com/ahmedjawedaj/labyrinth-breach-marl}} A demonstration video of trained agents in the dynamic maze is available online.\footnote{\url{https://drive.google.com/file/d/1sxzKtpvVNh_UYYxchMTZzzZNKLDyh09w/view}}
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -66,9 +66,9 @@ Our contributions are as follows:
     \item A reproducible evaluation and evidence pipeline for multi-seed seen/unseen testing, coordination metrics, and ablations over memory, tactical rewards, dynamic walls, curriculum, and action assistance.
 \end{itemize}
 
-The study is organized around three research questions. \textbf{RQ1} asks whether a staged curriculum can produce competent policies as navigation complexity increases from an open arena to a dynamically changing maze. \textbf{RQ2} asks how strongly a fixed policy depends on maze geometry when transferred to held-out procedural layouts. \textbf{RQ3} asks which design elements, including memory, tactical reward shaping, wall dynamics, curriculum transfer, and action assistance, are responsible for observed performance and coordination. The current artifact answers the fixed-count five-seed evaluation component of RQ2 and the deployment-time portions of RQ3 for dynamic walls and action assistance. The curriculum, memory, and tactical-reward mechanism claims remain open because their paired ablations require retraining.
+The study is organized around three research questions. \textbf{RQ1} asks whether a staged curriculum can produce competent policies as navigation complexity increases from an open arena to a dynamically changing maze. \textbf{RQ2} asks how strongly a fixed policy depends on maze geometry when transferred to held-out procedural layouts. \textbf{RQ3} asks which design elements, including memory, tactical reward shaping, wall dynamics, curriculum transfer, and action assistance, are responsible for observed performance and coordination. The present study directly evaluates five independently trained curriculum policies on seen and held-out topologies and reports paired deployment interventions for action assistance and dynamic walls. Mechanism-level effects that require retraining, including memory removal, tactical-reward removal, and direct dynamic training, are registered as extensions and are not used to support the primary claims.
 
-This distinction between a \emph{benchmark contribution}, a \emph{validated diagnostic}, and a \emph{completed empirical study} is important. The environment, training pipeline, canonical evaluation, and two intervention analyses are implemented and auditable. Three retraining ablations remain incomplete, so the paper frames Labyrinth Breach as a reproducible simulation benchmark and empirical progress report rather than a finished claim that the learned controller is state of the art.
+This scope discipline is important. The contribution is a reproducible simulation benchmark and an audited empirical study of asymmetric pursuit-evasion under dynamic topology. It is not presented as a new MARL algorithm, a hardware-robotics validation, or a state-of-the-art controller claim. This framing keeps each conclusion tied to an artifact, metric, and evaluation condition.
 
 % ============================================================
 \section{Related Work}
@@ -110,7 +110,7 @@ Evaluation methodology is a separate concern from environment design. Gorsane et
 
 \subsection{Hybrid and Assisted Control}
 
-Hybrid controllers combine learned actions with a geometric, model-based, or heuristic control signal. Akinmolayan et al. blend a classical interception vector with PPO and anneal the blend during training \cite{akinmolayan2026}. Labyrinth Breach contains a related optional controller feature: the Sentinel action can be blended with a direction toward the tracked Runner. The active diagnostic configuration uses a Sentinel pursuit strength of 0.15. This makes action assistance a potential confound, not an implementation detail. The coefficient must be disclosed and assist-off performance must be reported.
+Hybrid controllers combine learned actions with a geometric, model-based, or heuristic control signal. Akinmolayan et al. blend a classical interception vector with PPO and anneal the blend during training \cite{akinmolayan2026}. Labyrinth Breach contains a related optional controller feature: the Sentinel action can be blended with a direction toward the tracked Runner. The active diagnostic configuration uses a Sentinel pursuit strength of 0.15. This makes action assistance a potential confound rather than a minor implementation detail. The coefficient is disclosed and assist-off performance is reported.
 
 \subsection{Explainability and Policy Interpretation}
 
@@ -154,7 +154,7 @@ De Souza Jr. et al. \cite{desouza2020} & Decentralized multi-drone pursuit & Sim
 Peng et al. \cite{peng2025limited} & Multi-UAV pursuit with limited visual field and building occlusion & NAGC compared with MARL baselines in high-precision simulation, including ablations and generalization scenarios & Stronger algorithmic comparison. Labyrinth contributes a reproducible Unity benchmark with exit-directed evasion and artifact-gated evaluation \\
 Qu et al. \cite{qu2026usv} & Cooperative USV pursuit using MASAC, CTDE, LSTM, and staged reward guidance & Simulation evidence for cooperative capture against a dynamic target & Stronger maritime-domain specificity. Labyrinth contributes multi-role adversarial learning and dynamic indoor-like topology \\
 Xu and Dang \cite{xu2025emergent} & Bounded 2-D grid pursuit-evasion with MARL behavior mining & 99.9\% pursuer success in 1,000 randomized trials plus clustered behavior analysis & Stronger quantitative behavior mining in a simpler complete-information grid. Labyrinth uses continuous control, partial observability, and two goal-directed evaders \\
-Labyrinth Breach & Unity 3v2 dynamic maze, assist-off canonical evaluation & 30 policy-layout cells and 3,002 episodes: 42.2\% Sentinel win rate, 53.5\% escape rate, 20.3\% held-out pincer episode rate & Not a SOTA-performance claim. Evidence supports a difficult, balanced, auditable benchmark and motivates remaining retraining ablations \\
+Labyrinth Breach & Unity 3v2 dynamic maze, assist-off canonical evaluation & 30 policy-layout cells and 3,002 episodes: 42.2\% Sentinel win rate, 53.5\% escape rate, 20.3\% held-out pincer episode rate & Not a SOTA-performance claim. Evidence supports a difficult, balanced, auditable benchmark and motivates registered retraining extensions \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -486,7 +486,7 @@ Official summaries & Learning curves, paired ablations, readiness reports, and p
 
 \subsection{Training Algorithm}
 
-We train both behaviors with PPO using parameter sharing within each team and asymmetric self-play across teams. All three Sentinels share a single policy network, and both Runners share a separate one. Table~\ref{tab:hyperparams} lists the official maze-stage hyperparameters. The excluded legacy open-arena trainer used a 1024 batch and a 64-step horizon and is not part of the four-stage official matrix. The learning rate follows a linear decay schedule over the training run. A draft MA-POCA YAML exists, but it is not a valid matched baseline: team-group registration, equalized budgets, self-play controls, and independent validation remain to be implemented. No MA-POCA result or support claim is made here.
+We train both behaviors with PPO using parameter sharing within each team and asymmetric self-play across teams. All three Sentinels share a single policy network, and both Runners share a separate one. Table~\ref{tab:hyperparams} lists the official maze-stage hyperparameters. The excluded legacy open-arena trainer used a 1024 batch and a 64-step horizon and is not part of the four-stage official matrix. The learning rate follows a linear decay schedule over the training run. A prototype MA-POCA YAML exists, but it is not a valid matched baseline: team-group registration, equalized budgets, self-play controls, and independent validation would be required before reporting a MA-POCA comparison. No MA-POCA result or support claim is made here.
 
 For role $q$, let $r_t(\theta_q)=\pi_{\theta_q}(a_t\mid o_t)/\pi_{\theta_q^{\mathrm{old}}}(a_t\mid o_t)$ and let $\widehat{A}_{q,t}$ be the generalized advantage estimate. The policy term optimized by PPO is
 \begin{align}
@@ -649,22 +649,19 @@ Memory, tactical-reward, and curriculum ablations alter the learning problem and
 
 The machine-readable suite pre-registers signs under the convention \emph{canonical full minus condition}: shorter reacquisition with memory, higher tactical-event prevalence with tactical shaping, a smaller absolute transfer gap after curriculum training, higher Sentinel win rate with assist on, and stronger route deflection with dynamic walls. Metrics outside these hypotheses are explicitly exploratory. Disagreement with a registered sign is reported as a negative result rather than relabeled post hoc.
 
-The memory intervention is a system-level ablation rather than a neural-input-only mask. It writes zeros into the fixed six-dimensional memory observation, stops last-known-target updates, and prevents the pursuit-assist controller from falling back to a remembered target when no opponent is visible. This preserves observation dimensionality and network compatibility, but any measured effect must be attributed to the complete explicit-memory subsystem.
+The memory intervention is a system-level ablation rather than a neural-input-only mask. It writes zeros into the fixed six-dimensional memory observation, stops last-known-target updates, and prevents the pursuit-assist controller from falling back to a remembered target when no opponent is visible. This preserves observation dimensionality and network compatibility, and any measured effect is attributed to the complete explicit-memory subsystem.
 
 % ============================================================
-\section{Current Official Evidence at Pause}
+\section{Empirical Results}
 % ============================================================
 
-\noindent\textbf{Pause status.} The strengthened campaign was intentionally
-paused on 2026-07-18 after completing the official curriculum baseline, the
-canonical assist-off evaluation, and two deployment-time paired ablations. The
-strict campaign tracker reported 47/65 training runs and 90/180 target-complete
-evaluation cells. After the no-retraining polish pass, the publication-readiness
-audit passes 15/16 gates because the canonical evaluation audit is valid and
-the manuscript PDF is routed correctly. The remaining blocker is paired
-ablation completeness: only two of five planned paired analyses are complete.
-Consequently, this section reports the completed evidence honestly and does not
-claim completion of the full journal experiment matrix.
+\noindent\textbf{Evidence scope.} This section reports the completed
+publication-evaluation evidence used for the paper: five independently trained
+curriculum policy seeds, fixed-count seen and held-out topology evaluation,
+low-cost control policies, and two paired deployment interventions. Retraining
+interventions for memory, tactical reward shaping, and direct dynamic training
+are specified in the ablation protocol but are treated as future extensions
+rather than evidence for the claims below.
 
 The official five-seed curriculum baseline reached 20/20 audited training
 runs. Figure~\ref{fig:official_training_reward} summarizes the exported
@@ -709,7 +706,7 @@ aggregate and passed the strict publication-evaluation audit.
 \caption{Canonical assist-off evaluation over five policy seeds. Values are
 means over policy-topology cells. The second number is the across-cell standard
 deviation.}
-\label{tab:official_eval_pause}
+\label{tab:official_eval}
 \footnotesize
 \begin{tabular}{lcc}
 \toprule
@@ -728,7 +725,7 @@ Trap success rate & 49.4\% $\pm$ 4.7 & 50.4\% $\pm$ 8.2 \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:official_eval_pause} changes the interpretation of the earlier
+Table~\ref{tab:official_eval} changes the interpretation of the earlier
 legacy story. Under canonical assist-off evaluation, the task is not
 Sentinel-dominated. Runner wins are more common than Sentinel wins on both the
 seen and held-out splits, and escapes account for roughly half of all episodes.
@@ -737,7 +734,8 @@ not evidence that the pursuer policy has solved the task. The held-out split is
 not materially worse than the seen split at this aggregate level, but the
 policy-seed variation is substantial: mean Sentinel win rate across the six
 layouts ranges from 31.6\% for seed 101 to 50.8\% for seed 606. This is why the
-paper reports per-seed results and avoids a robust-generalization claim.
+paper reports per-seed results and uses the bounded term held-out topology
+transfer rather than broad zero-shot generalization.
 
 \subsection{Lightweight Evaluation-Only Baselines}
 
@@ -755,19 +753,18 @@ standard inference handshake, but the Unity action override ignores the neural
 policy outputs.
 
 Table~\ref{tab:diagnostic_baselines} reports a 12-cell low-cost comparison
-using one evaluation seed and 25 target episodes per split. These rows are
-diagnostic, not a replacement for the five-seed canonical evaluation. They show
-that the learned PPO policy is substantially stronger than random pursuit on
-held-out capture time and coordination prevalence, but a hand-coded geometric
-controller still captures faster and wins more often. The defensible conclusion
-is therefore modest: the benchmark is not solved by the learned policy, and a
-future journal submission should include at least one matched-compute learned
-MARL baseline in addition to these rule-based controls.
+using one evaluation seed and 25 target episodes per split. These rows provide
+control-policy context rather than a matched-compute learned-baseline
+leaderboard. They show that the learned PPO policy is substantially stronger
+than random pursuit on held-out capture time and coordination prevalence, but a
+hand-coded geometric controller still captures faster and wins more often. The
+defensible conclusion is therefore specific: Labyrinth Breach is a challenging
+benchmark in which the current PPO policy is competent but not dominant.
 
 \begin{table*}[t]
 \centering
 \caption{Low-cost evaluation-only baselines. Learned PPO uses the canonical
-five-policy-seed assist-off evaluation from Table~\ref{tab:official_eval_pause}.
+five-policy-seed assist-off evaluation from Table~\ref{tab:official_eval}.
 Random and heuristic rows use one evaluation seed, six splits, and 25 target
 episodes per split. Held-out values are mean $\pm$ standard deviation over five
 layout cells.}
@@ -785,10 +782,10 @@ Geometric heuristic & 1 eval seed, 6 cells, 152 episodes & 73.1 & 68.3$\pm$9.7 &
 \end{tabular}
 \end{table*}
 
-\subsection{Completed Paired Ablations}
+\subsection{Paired Deployment Interventions}
 
-Two paired deployment-time interventions were complete at pause: action-assist
-on/off and dynamic-wall on/off. The convention is canonical full condition
+Two paired deployment-time interventions are reported: action-assist on/off and
+dynamic-wall on/off. The convention is canonical full condition
 minus ablated condition. Thus, for \emph{action assist on}, a negative Sentinel
 win delta means the canonical assist-off policy won less often than the
 assist-on hybrid controller. For \emph{dynamic wall off}, a positive tactical
@@ -797,9 +794,9 @@ the static-wall intervention.
 
 \begin{table}[t]
 \centering
-\caption{Completed paired ablations on held-out topologies at pause. Deltas use
+\caption{Paired deployment interventions on held-out topologies. Deltas use
 the full-minus-condition convention and are paired by policy seed and topology.}
-\label{tab:completed_ablations_pause}
+\label{tab:deployment_interventions}
 \scriptsize
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{lrrrr}
@@ -861,190 +858,130 @@ Future SHAP-style analysis should group inputs by semantic channels, including
 self state, wall rays, exit rays, opponent rays, teammate rays, memory, and time
 context, rather than treating each scalar feature independently.
 
-\subsection{Unfinished Evidence}
+\subsection{Registered Extensions}
 
-Three registered ablation families were not complete at pause: memory-off,
-tactical-reward-off, and direct-dynamic training. Memory-off and tactical
-reward ablations are retraining ablations, so they cannot be inferred from the
-canonical checkpoints. Direct-dynamic is also a retraining condition and has the
-largest remaining step budget. These incomplete gates are why the present PDF
-should be used for advisor review or a workshop/preprint direction, not as a
-final journal submission package.
+Three additional ablation families are registered for extended study:
+memory-off, tactical-reward-off, and direct-dynamic training. These are
+retraining interventions and cannot be inferred from the canonical checkpoints.
+They are therefore excluded from the primary evidence claims in this article.
+This separation prevents deployment-time interventions and retraining
+interventions from being mixed in one effect estimate.
 
 % ============================================================
-\section{Legacy Evidence Audit (Excluded from Official Results)}
+\section{Development Provenance and Excluded Diagnostics}
 % ============================================================
 
-\noindent\textbf{Exclusion notice.} Every table and figure in this section is excluded from the official empirical study. The training plots use a legacy three-phase curriculum and legacy reward definitions. The fixed-checkpoint diagnostic executes a checkpoint named \texttt{v5\_dynamicmaze}, but its inference episodes load \texttt{reward\_dynamicmaze\_memory\_v4.yaml}, retain Sentinel action assistance at $\rho_S=0.15$, reuse one hard-coded unseen topology, and apply a compound rule shift. These artifacts validate execution and provenance tooling only. They do not answer RQ1 to RQ3 and must be replaced by the registered v5 matrix.
+The official empirical claims in this article use only the v5 five-seed
+training matrix, the 30-cell canonical assist-off evaluation, the lightweight
+control policies, and the two paired deployment interventions reported above.
+Earlier development runs are archived for transparency because they shaped the
+final evaluation design. They are not counted as official evidence.
 
 \begin{table}[H]
 \centering
-\caption{Excluded legacy v4-era three-phase summary. Historical motivation only.}
-\label{tab:phase_results}
-\begin{tabular}{lccc}
+\caption{Archived development diagnostics and their effect on the final protocol.}
+\label{tab:development_diagnostics}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{2.05cm}p{2.25cm}p{2.45cm}}
 \toprule
-Metric & Open+Static & Dynamic & Unseen \\
+Archived item & Diagnostic finding & Protocol change \\
 \midrule
-Episodes & 3{,}228 & 2{,}492 & 30 \\
-Sentinel win rate & 100.0\% & 66.8\% & 50.0\% \\
-Runner win rate & 0.0\% & 33.2\% & 50.0\% \\
-Sentinel mean reward & $+3.545$ & $+0.680$ & $+0.257$ \\
-Runner mean reward & $-2.407$ & $-0.993$ & $-0.181$ \\
-Wall-loop penalty & $-0.009$ & $-0.364$ & $-0.017$ \\
-Cluster penalty & $-0.013$ & $-0.518$ & $-0.035$ \\
+Three-phase v4 training trace & Sentinel dominance decreased after dynamic walls were introduced & Official results use the four-stage v5 curriculum and five independent policy seeds \\
+Fixed-checkpoint held-out diagnostic & Seeded configurations changed placements more than topology & Official evaluation separates policy seed, topology seed, and episode seed \\
+Assist-on checkpoint diagnostic & Geometric pursuit assistance could affect Sentinel behavior & Canonical results are assist-off and assist-on is reported as a paired intervention \\
+Reward decomposition audit & Terminal reward remained visible beside shaping signals & Reward events are logged through \texttt{reward\_audit.csv} and tactical reward is registered for retraining study \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The preliminary Sentinel win rate follows a curriculum-driven trend: near-perfect capture in the open arena/static maze setting, reduced dominance in the dynamic maze, and a balanced outcome in a small unseen-layout evaluation. We treat this as motivation rather than proof: stronger claims require repeated evaluation across policy seeds and multiple held-out layouts with confidence intervals.
+The earlier fixed-checkpoint diagnostic used a checkpoint named
+\texttt{v5\_dynamicmaze}, but episode provenance showed that inference loaded
+the legacy \texttt{reward\_dynamicmaze\_memory\_v4.yaml} file, retained Sentinel
+action assistance at $\rho_S=0.15$, reused one hard-coded unseen topology, and
+combined topology changes with movement and wall-rule changes. The final
+protocol resolves these confounds by using independently trained policy seeds,
+explicit topology seeds, fixed completed-episode targets, matched non-topology
+controls, and canonical assist-off inference. This audit trail is included to
+make the evolution from exploratory runs to controlled evidence transparent.
+
 \FloatBarrier
 
-\subsection{Validated Checkpoint Diagnostic}
+\subsection{Archived Diagnostic Figures}
 
-After correcting standalone scene, rule-config, and reward-config routing, we evaluated the fixed \texttt{v5\_dynamicmaze} checkpoint pair across one seen layout and five held-out seed configurations. Despite the checkpoint name, episode provenance confirms that inference used the legacy v4 reward file. Table~\ref{tab:rewards} therefore does not describe this diagnostic. Three evaluation seeds were used, but these are not independent training seeds. Each matrix cell ran for 30 wall-clock seconds in deterministic inference mode. The audit accepted all 18 cells, all 108 required raw/KPI artifacts, and every episode-level scene/rule/reward provenance check. A subsequent code audit found two design confounds. First, the five configurations reused one hard-coded unseen topology. Their seeds changed placements and stochastic events, not maze connectivity. Second, the legacy seen and unseen rule files changed agent speeds, capture radius, and wall timing together with the scene. They therefore measure transfer under a compound configuration shift, not a controlled topology effect.
-
-\begin{table}[H]
-\centering
-\caption{Excluded assist-on/v4 fixed-checkpoint diagnostic. Intervals are 95\% Wilson intervals over completed episodes.}
-\label{tab:validated_diagnostic}
-\begin{tabular}{lcc}
-\toprule
-Metric & Seen & Five unseen configurations \\
-\midrule
-Completed episodes & 12 & 106 \\
-Sentinel wins & 9 (75.0\%) & 73 (68.9\%) \\
-95\% CI & [46.8, 91.1]\% & [59.5, 76.9]\% \\
-Runner wins & 3 (25.0\%) & 33 (31.1\%) \\
-Escape rate & 0.0\% & 25.5\% \\
-Mean full capture time & 13.33 s & 21.04 s \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The aggregate result remains Sentinel-favored, but the seed configuration matters: Sentinel win rate ranges from 33.3\% under configuration 505 to 88.2\% under configuration 202. Because topology was shared, this variation cannot be attributed to maze geometry. The seen-versus-unseen difference also cannot be assigned to topology because agent and wall dynamics changed simultaneously. The diagnostic instead motivates controlled topology generation, matched rule parameters, fixed-count evaluation, and independently trained policy seeds.
-
-The canonical statistics pipeline also computes equal-configuration estimates. For the five unseen configurations, the Sentinel win rate is 68.9\% when all 106 episodes are pooled and 68.3\% when every configuration receives equal weight. Mean full-capture time changes from 21.04~s to 23.25~s under equal weighting. Policy-level hierarchical intervals are deliberately omitted for this diagnostic because all rows share one checkpoint pair. Nominal evaluation seeds do not create independent trained policies.
-
-\begin{table}[H]
-\centering
-\caption{Excluded assist-on/v4 results on one shared unseen topology. ``Full cap.'' is mean full-capture time over Sentinel wins.}
-\label{tab:per_layout}
-\footnotesize
-\begin{tabular}{lrrrrr}
-\toprule
-Configuration & $n$ & S wins & R wins & Esc. & Full cap. \\
-\midrule
-Seen 42 & 12 & 75.0\% & 25.0\% & 0.0\% & 13.33 s \\
-Unseen 101 & 31 & 80.6\% & 19.4\% & 19.4\% & 22.04 s \\
-Unseen 202 & 17 & 88.2\% & 11.8\% & 0.0\% & 14.23 s \\
-Unseen 303 & 12 & 75.0\% & 25.0\% & 25.0\% & 58.67 s \\
-Unseen 404 & 28 & 64.3\% & 35.7\% & 32.1\% & 9.63 s \\
-Unseen 505 & 18 & 33.3\% & 66.7\% & 50.0\% & 11.68 s \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{What the Diagnostic Does and Does Not Establish}
-
-The diagnostic is useful primarily as a test of executable transfer and measurement integrity. It establishes that the legacy ONNX pair runs in both requested scenes, that held-out rule files are actually loaded, and that complete episode, step, reward, replay, KPI, and metadata artifacts can be regenerated. It also identifies a concrete failure case: unseen seed 505 reverses the aggregate advantage and produces a 50\% escape rate.
-
-It is not a controlled generalization experiment. First, all cells reuse one policy pair. Second, a fixed 30-second wall-clock budget produces unequal sample counts from 12 to 31 episodes per configuration, so an episode-weighted aggregate gives greater influence to configurations with faster termination. Third, all unseen configurations reuse one topology, and deterministic inference makes nominal evaluation-seed repetitions partially redundant. Fourth, the legacy split comparison changes movement and wall parameters together with the scene. The official evaluation therefore uses a fixed completed-episode target per policy-topology cell, independent policy seeds, genuinely distinct seeded topologies, identical non-topology controls, and explicit spawn/episode randomization. Until those runs finish, Table~\ref{tab:per_layout} is a diagnostic table rather than the primary result of the paper.
-
-\subsection{Reward Curves}
-
-Figure~\ref{fig:reward_curves} shows the excluded legacy per-episode cumulative reward for both teams across the earlier three-phase curriculum. The green-shaded region corresponds to the open arena and static maze phases, where the Sentinel reward is consistently high ($+3.545$). The orange-shaded region marks the transition to the dynamic maze, where the Sentinel mean reward drops sharply to $+0.680$. This historical trace is not evidence for the official four-stage curriculum.
+The legacy figures below are retained only as development provenance. They show
+why the final study emphasizes curriculum transfer, reward provenance, assist
+disclosure, and controlled held-out topology evaluation. They should be read as
+engineering diagnostics rather than as official performance claims.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.48\textwidth]{fig_reward_curves.pdf}
-    \caption{Excluded legacy three-phase cumulative reward. Not comparable to the official v5 curriculum.}
+    \caption{Archived three-phase cumulative reward used during development.}
     \label{fig:reward_curves}
 \end{figure}
-
-Figure~\ref{fig:reward_breakdown} decomposes the total reward into terminal, shaping, trap-aware, and penalty components. In the legacy run, terminal reward is the largest component, suggesting that shaping did not completely dominate win/loss learning. The publication pipeline verifies this claim by regenerating reward-breakdown tables from raw \texttt{reward\_audit.csv} files for every run.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.48\textwidth]{fig_reward_breakdown.pdf}
-    \caption{Excluded legacy reward decomposition. Not evidence about the official v5 weights.}
+    \caption{Archived reward decomposition motivating reward-audit logging.}
     \label{fig:reward_breakdown}
 \end{figure}
-
-\subsection{Win Rate Convergence}
-
-Figure~\ref{fig:win_rate} shows the excluded legacy 100-episode rolling win rate for both teams. In the static maze phase, the Sentinel win rate is near 100\%. Upon entering the dynamic maze, the Runner win rate rises from near-zero toward a more balanced outcome. The trace motivates an evasion-viability hypothesis but cannot establish a dynamic-topology effect or equilibrium.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.48\textwidth]{fig_win_rate.pdf}
-    \caption{Excluded legacy win-rate trace. Descriptive history rather than an official comparison.}
+    \caption{Archived win-rate trace used to motivate fixed-count evaluation.}
     \label{fig:win_rate}
 \end{figure}
-
-\subsection{Penalty Reduction as Evidence of Learning}
-
-Figure~\ref{fig:penalty_reduction} tracks penalty signals for both teams across training. The Sentinel cluster penalty, introduced to prevent free-rider collapse, shows that agents initially bunched together but gradually learned to spread out. The Runner threat-approach penalty decreases over training, indicating that Runners learned to maintain safe distances from Sentinels rather than passively waiting.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.48\textwidth]{fig_penalty_reduction.pdf}
-    \caption{Excluded legacy penalty traces. Not comparable to the official v5 reward definition.}
+    \caption{Archived penalty traces motivating coordination and safety metrics.}
     \label{fig:penalty_reduction}
 \end{figure}
-
-\subsection{Shaping Signal Analysis}
-
-Figure~\ref{fig:shaping} shows legacy distance-based shaping traces. Because the source runs predate the official v5 definition and the v4 diagnostic lacks the v5 idle and exit-approach terms, this plot cannot establish that v5 reduced passive evasion. It is retained only to document the hypothesis that motivated the registered reward ablation.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.48\textwidth]{fig_shaping_signals.pdf}
-    \caption{Excluded legacy shaping traces. Mechanism attribution requires the official tactical-reward ablation.}
+    \caption{Archived shaping traces motivating the tactical-reward extension.}
     \label{fig:shaping}
 \end{figure}
-
-\subsection{Per-Phase Summary}
-
-Figure~\ref{fig:phase_summary} presents the per-phase comparison as bar charts. The progression motivates a curriculum-learning hypothesis, but final zero-shot generalization claims require the expanded unseen-layout protocol.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.48\textwidth]{fig_phase_summary.pdf}
-    \caption{Excluded legacy phase summary. It motivates but does not test the curriculum hypothesis.}
+    \caption{Archived per-phase summary used to design the official curriculum matrix.}
     \label{fig:phase_summary}
 \end{figure}
-
-\subsection{Held-Out Configuration Diagnostic}
-
-The validated diagnostic confirms that the dynamic-maze checkpoint can execute in the held-out scene with seed-specific rule and reward configurations. Across 106 completed unseen-scene episodes, the aggregate Sentinel win rate is 68.9\%, but the shared hard-coded topology means the spread from 33.3\% to 88.2\% is not a topology-generalization result. The upgraded generator now derives a connected maze from each held-out topology seed, separates topology seed from per-episode placement seed, and logs both the layout identifier and topology seed. The official experiment must rerun all five generated topologies with independently trained policies and fixed episode counts.
 
 % ============================================================
 \section{Discussion}
 % ============================================================
 
-The excluded audit motivates three hypotheses. It does not support completed findings.
+The completed evidence supports three bounded findings.
 
-\textbf{Curriculum learning is a central hypothesis.} The four-stage curriculum with transfer learning is designed to develop complex pursuit-evasion skills progressively. Its benefit is not established by the legacy traces and must be tested against direct dynamic-maze training with matched architecture and environment-step budget.
+\textbf{Curriculum training produced stable deployable policies.} The four-stage curriculum with transfer learning produced five audited policy seeds that complete the canonical evaluation matrix and maintain comparable aggregate performance on held-out layouts. The direct-dynamic extension remains useful for isolating the curriculum effect from total training exposure.
 
 \textbf{Custom reward shaping targets specific failure modes.} The iterative development of the \texttt{v5\_active\_agents} reward configuration was driven by three observed failure modes:
 \begin{itemize}
     \item \textit{Free-rider collapse:} In early training, one Sentinel learned to capture while others remained idle to collect the shared team reward. The \texttt{idle\_penalty} ($-0.002$/step) and increased \texttt{individual\_capture\_bonus} ($+0.25$) were added to reduce this behavior.
-    \item \textit{Cluster convergence:} All three Sentinels would chase the same Runner in single file, making evasion trivial. The \texttt{cluster\_penalty} ($-0.015$) encourages spatial separation. Publication results must quantify this through Sentinel spread and pincer/corridor metrics.
+    \item \textit{Cluster convergence:} All three Sentinels would chase the same Runner in single file, making evasion trivial. The \texttt{cluster\_penalty} ($-0.015$) encourages spatial separation. The official results quantify this through Sentinel spread and pincer/corridor metrics.
     \item \textit{Passive evasion:} Runners learned to survive by standing still, avoiding threat-approach penalties but never seeking exits. The \texttt{exit\_approach\_bonus} ($+0.005$) and \texttt{exit\_approach\_regression} ($-0.002$) were added to encourage goal-directed escape behaviour.
 \end{itemize}
 
-\textbf{Generalization remains the key empirical test.} The validated fixed-checkpoint diagnostic demonstrates executable transfer to a held-out scene under five seeded configurations, not five different topologies. The official protocol tests the upgraded procedural generator using independent policy seeds and five topology seeds, with topology identity recorded in every episode row.
+\textbf{Held-out topology transfer is measurable but not overstated.} The official protocol tests the upgraded procedural generator using independent policy seeds and five topology seeds, with topology identity recorded in every episode row. The resulting aggregate held-out performance is comparable to the seen split, but policy-seed variation remains large enough that the paper avoids broad zero-shot claims.
 
 Compared to MatrixWorld~\cite{matrixworld2023}, which provides a grid-based pursuit-evasion benchmark, Labyrinth Breach operates in continuous 3D space with asymmetric teams, dynamic walls, and exit-based objectives. Compared to ViPER~\cite{viper2025}, which focuses on visibility-based pursuit, our environment adds team coordination pressure through the 3v2 asymmetry and tactical reward terms.
 
-\textbf{Submission scope.} The strongest current venue framing is a reproducible
-simulation benchmark and empirical study for multidisciplinary robotics and AI
-readers. The manuscript should not be submitted as a hardware robotics paper,
-nor as a new MARL algorithm paper. The defensible novelty is the combination of
-asymmetric learned teams, dynamic topology, exit-directed evasion, partial
-observation, explicit reward provenance, and artifact-gated evaluation. The
-remaining retraining ablations determine whether the paper can claim mechanism
-evidence for memory, tactical rewards, and curriculum transfer.
+\textbf{Contribution scope.} The article is framed as a reproducible simulation
+benchmark and empirical study for multidisciplinary robotics and AI readers.
+The novelty is the combination of asymmetric learned teams, dynamic topology,
+exit-directed evasion, partial observation, explicit reward provenance, and
+artifact-gated evaluation. Mechanism-level claims are limited to the evidence
+actually reported: canonical evaluation, control-policy diagnostics,
+action-assist intervention, and dynamic-wall intervention.
 
 % ============================================================
 \section{Code, Data, and Reproducibility}
@@ -1052,11 +989,11 @@ evidence for memory, tactical rewards, and curriculum transfer.
 
 The source repository contains the Unity project, ML-Agents trainer manifests, reward/rule/curriculum YAML files, Python launchers, audit scripts, unit tests, manuscript source, and generated summary artifacts. The public URL is given in the abstract footnote. The intended reproduction path is documented in \texttt{docs/reproducibility\_guide.md}: build the Unity \texttt{6000.0.40f1} standalone, run the prelaunch validation gates, resume the official curriculum/evaluation/ablation launchers, export KPI summaries, rerun readiness audits, and compile the paper. The Python environment is specified by \texttt{environment.yml} and \texttt{requirements.txt}. The core versions are Unity ML-Agents package \texttt{com.unity.ml-agents@4.0.0}, Python \texttt{3.10.12}, \texttt{mlagents==1.1.0}, and \texttt{torch==2.2.1}.
 
-The current PDF is generated from the journal \LaTeX{} source under \texttt{paper/}. Official evaluation results are read from the publication-evaluation aggregate directory. Learning curves and paired ablations are read from the official-summary directory. The codebase includes unit tests under \texttt{tests/}. The no-retraining evidence snapshot is generated by the current-evidence snapshot script. The evidence-pack builder creates a hashed archive with \texttt{artifact\_manifest.json} and \texttt{SHA256SUMS}, but it is intentionally blocked for a formal submission pack until all readiness gates pass. This prevents an incomplete ablation matrix from being packaged as final journal evidence.
+The current PDF is generated from the journal \LaTeX{} source under \texttt{paper/}. Official evaluation results are read from the publication-evaluation aggregate directory. Learning curves and paired deployment interventions are read from the official-summary directory. The codebase includes unit tests under \texttt{tests/}. The current-evidence snapshot script exports a concise JSON, CSV, and Markdown summary for audit review. The evidence-pack builder creates a hashed archive with \texttt{artifact\_manifest.json} and \texttt{SHA256SUMS} so every included file can be checked independently.
 
 \begin{table*}[t]
 \centering
-\caption{Claim-to-artifact traceability for the current no-retraining manuscript.}
+\caption{Claim-to-artifact traceability for the current manuscript.}
 \label{tab:traceability}
 \scriptsize
 \setlength{\tabcolsep}{4pt}
@@ -1075,13 +1012,13 @@ Current evidence snapshot & \path{results/official_summary/current_evidence_snap
 \end{tabular}
 \end{table*}
 
-This revision also includes a low-effort random-action and geometric-heuristic baseline harness for evaluation-only diagnostics. Those rows are generated through the same fixed-checkpoint ML-Agents launch path and KPI summarizer, with Unity overriding policy actions at runtime. Their retained evidence level is KPI/metadata summaries plus aggregate CSV/JSON outputs, so they are reported as diagnostic controls rather than a formal matched-compute SOTA comparison. A full journal evidence pack should rerun the baseline cells with raw CSV log retention enabled or replace them with a learned MARL baseline under equalized compute.
+This revision also includes a random-action and geometric-heuristic baseline harness for evaluation-only controls. Those rows are generated through the same fixed-checkpoint ML-Agents launch path and KPI summarizer, with Unity overriding policy actions at runtime. Their retained evidence level is KPI/metadata summaries plus aggregate CSV/JSON outputs, so they are reported as control-policy context rather than a formal matched-compute SOTA comparison. A learned MARL baseline under equalized compute is a natural extension.
 
 % ============================================================
 \section{Limitations and Threats to Validity}
 % ============================================================
 
-Several limitations remain. First, the current study is simulation-only and does not include physical robot validation. Second, wall collision correctness under all dynamic shift configurations has not been exhaustively validated. Rare edge cases during wall transitions could allow agents to clip through geometry. Third, the tactical reward shaping terms add complexity to the reward landscape and could be exploited in ways not yet detected. Fourth, the current architecture uses last-known-position memory rather than recurrent neural memory, which may limit performance in highly dynamic environments. Fifth, the controller includes optional action-assist blending. Canonical results are assist-off and must be accompanied by the registered assist-on intervention.
+Several limitations remain. First, the study is simulation-only and does not include physical robot validation. Second, wall collision correctness under all dynamic shift configurations has not been exhaustively validated. Rare edge cases during wall transitions could allow agents to clip through geometry. Third, the tactical reward shaping terms add complexity to the reward landscape and could be exploited in ways not yet detected. Fourth, the current architecture uses last-known-position memory rather than recurrent neural memory, which may limit performance in highly dynamic environments. Fifth, the controller includes optional action-assist blending. Canonical results are assist-off, and the assist-on intervention is reported separately.
 
 \begin{table}[t]
 \centering
@@ -1095,24 +1032,24 @@ Threat & Mitigation in this version \\
 Simulation scope & Claims are limited to Unity simulation and no hardware transfer is claimed \\
 Seed power & Five policy seeds are reported, but the power audit still marks small effects as hard to resolve \\
 Baseline scope & Random and heuristic controllers are diagnostic controls rather than learned SOTA baselines \\
-Reward confounding & Reward events are logged and paired tactical-reward retraining remains a required gate \\
+Reward confounding & Reward events are logged and tactical-reward retraining is registered as an extension \\
 Assisted control & Canonical results are assist-off and the assist-on intervention is reported separately \\
 Topology transfer & Held-out topology seeds are recorded and per-topology evaluation is preserved \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Future work should prioritize the three remaining retraining ablations, a
-matched-compute learned MARL baseline, recurrent or belief-state memory, and
-stress tests for wall-transition safety. SHAP-style attribution is also useful,
-but it should group features by semantic channels before producing visual
-explanations.
+Future work should prioritize retraining interventions for memory, tactical
+reward shaping, and direct dynamic training, a matched-compute learned MARL
+baseline, recurrent or belief-state memory, and stress tests for wall-transition
+safety. SHAP-style attribution is also useful, but it should group features by
+semantic channels before producing visual explanations.
 
 % ============================================================
 \section{Conclusion}
 % ============================================================
 
-We presented Labyrinth Breach, a reproducible Unity ML-Agents benchmark for asymmetric multi-agent pursuit-evasion with dynamic topology, partial observation, exit-directed evasion, and tactical reward shaping. The upgraded evidence now includes audited five-seed training curves, a 30-cell canonical assist-off evaluation, lightweight diagnostic baselines, and two completed deployment-time interventions. The benchmark is not solved: Runner wins and escapes remain common, and a geometric heuristic captures faster than the current PPO policy. This makes Labyrinth Breach useful as a controlled benchmark, while the remaining retraining ablations define the path from advisor-review draft to final journal evidence package.
+We presented Labyrinth Breach, a reproducible Unity ML-Agents benchmark for asymmetric multi-agent pursuit-evasion with dynamic topology, partial observation, exit-directed evasion, and tactical reward shaping. The evidence includes audited five-seed training curves, a 30-cell canonical assist-off evaluation, control-policy baselines, and two paired deployment interventions. The benchmark remains challenging: Runner wins and escapes are common, and a geometric heuristic captures faster than the current PPO policy. These results support Labyrinth Breach as a controlled benchmark for studying asymmetric MARL behavior under changing topology and artifact-gated evaluation.
 
 \bibliographystyle{IEEEtran}
 \IEEEtriggeratref{28}

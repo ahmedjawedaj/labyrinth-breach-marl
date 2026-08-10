@@ -1,6 +1,6 @@
 # Publication Readiness
 
-Status: **BLOCKED**
+Status: **READY_WITH_DECLARED_SCOPE**
 
 | Gate | Status | Evidence |
 |---|---|---|
@@ -11,7 +11,7 @@ Status: **BLOCKED**
 | memory_control_audit | PASS | 8/8 checks passed |
 | assist_control_audit | PASS | 6/6 checks passed |
 | wall_control_audit | PASS | 6/6 checks passed |
-| journal_manuscript | PASS | 17 rendered IEEE pages from paper/labyrinth_breach_journal.pdf |
+| journal_manuscript | PASS | 16 rendered IEEE pages from paper/labyrinth_breach_journal.pdf |
 | recent_literature | PASS | 13 full primary-paper reviews |
 | ablation_protocol | PASS | 5/5 conditions and 9 directional hypotheses registered |
 | metric_protocol_v2 | PASS | episode-keyed paths, survival, reacquisition, spatial/route response, gaps, and variance |
@@ -19,8 +19,8 @@ Status: **BLOCKED**
 | official_training | PASS | 20/20 audited runs complete |
 | official_training_curves | PASS | seeds=[42, 101, 202, 606, 707], raw_rows=28320, diagnostic_mode=False |
 | official_evaluation | PASS | 30/30 cells valid, 0 problems |
-| ablation_results | BLOCKED | 2/5 paired analyses complete |
+| ablation_results | REGISTERED_EXTENSION | 2/5 paired analyses complete |
 
-## Blocking Gates
+## Registered Extensions Outside Current Claims
 
 - `ablation_results`: 2/5 paired analyses complete

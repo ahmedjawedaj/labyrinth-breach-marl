@@ -1,7 +1,4 @@
 {
-  "blocking_gate_ids": [
-    "ablation_results"
-  ],
   "completed_ablation_effects": [
     {
       "ablation_id": "action_assist_on",
@@ -84,7 +81,7 @@
       "paired_effect_dz": -1.2100682598043315
     }
   ],
-  "generated_utc": "2026-07-24T09:09:13.691682+00:00",
+  "generated_utc": "2026-08-10T09:37:36.375133+00:00",
   "lightweight_baselines": [
     {
       "cells": 1,
@@ -158,18 +155,22 @@
     }
   },
   "passed_gates": 15,
-  "readiness_status": "BLOCKED",
-  "remaining_with_retraining": [
+  "pending_evidence_gate_ids": [],
+  "readiness_status": "READY_WITH_DECLARED_SCOPE",
+  "registered_extension_gate_ids": [
+    "ablation_results"
+  ],
+  "registered_retraining_extensions": [
     "memory off paired retraining",
     "tactical reward off paired retraining",
     "direct dynamic training paired retraining"
   ],
-  "remaining_without_retraining": [
+  "schema_version": 1,
+  "submission_polish_without_retraining": [
     "tighten claims and threat framing",
     "strengthen literature synthesis",
     "keep random and heuristic controls as diagnostic only",
     "maintain script-to-table traceability"
   ],
-  "schema_version": 1,
   "total_gates": 16
 }

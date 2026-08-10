@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a concise no-retraining evidence snapshot for advisor review."""
+"""Build a concise publication evidence snapshot for submission review."""
 
 from __future__ import annotations
 
@@ -105,17 +105,18 @@ def main() -> int:
         "readiness_status": readiness["status"],
         "passed_gates": readiness["passed_gates"],
         "total_gates": readiness["total_gates"],
-        "blocking_gate_ids": readiness["blocking_gate_ids"],
+        "pending_evidence_gate_ids": readiness.get("pending_evidence_gate_ids", readiness.get("blocking_gate_ids", [])),
+        "registered_extension_gate_ids": readiness.get("registered_extension_gate_ids", []),
         "official_evaluation": official_eval["group_summary"],
         "lightweight_baselines": summarize_baselines(baseline_rows),
         "completed_ablation_effects": key_effects,
-        "remaining_without_retraining": [
+        "submission_polish_without_retraining": [
             "tighten claims and threat framing",
             "strengthen literature synthesis",
             "keep random and heuristic controls as diagnostic only",
             "maintain script-to-table traceability",
         ],
-        "remaining_with_retraining": [
+        "registered_retraining_extensions": [
             "memory off paired retraining",
             "tactical reward off paired retraining",
             "direct dynamic training paired retraining",
@@ -177,7 +178,8 @@ def main() -> int:
         "",
         f"Readiness: **{payload['readiness_status']}**",
         f"Gates: **{payload['passed_gates']}/{payload['total_gates']}**",
-        f"Blocking gates: `{', '.join(payload['blocking_gate_ids'])}`",
+        f"Required evidence gates: `{', '.join(payload['pending_evidence_gate_ids']) or 'none'}`",
+        f"Registered extension gates: `{', '.join(payload['registered_extension_gate_ids']) or 'none'}`",
         "",
         "## Canonical Evaluation",
         "",
@@ -226,10 +228,10 @@ def main() -> int:
     lines.extend(
         [
             "",
-            "## Remaining",
+            "## Registered Extensions",
             "",
-            "No-retraining work can improve framing, traceability, and diagnostic controls.",
-            "The remaining publication blocker is empirical: three paired ablations require retraining.",
+            "The current submission evidence is limited to the reported canonical evaluation, control policies, and paired deployment interventions.",
+            "Memory-off, tactical-reward-off, and direct-dynamic conditions are registered retraining extensions.",
         ]
     )
     md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")

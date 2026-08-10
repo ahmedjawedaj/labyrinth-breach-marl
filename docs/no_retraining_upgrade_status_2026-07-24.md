@@ -1,26 +1,26 @@
-# No-Retraining Publication Upgrade Status
+# Publication Upgrade Status
 
 Date: 2026-07-24
 
 ## Current Position
 
-The no-retraining pass improves the paper, references, traceability, and
+The publication pass improves the paper, references, traceability, and
 diagnostic evidence without starting new training. The current readiness audit
-passes 15 of 16 gates. The only remaining blocker is empirical ablation
-completion: memory off, tactical reward off, and direct dynamic training require
-paired retraining and cannot be inferred from the existing checkpoints.
+passes 15 of 16 evidence checks. Memory off, tactical reward off, and direct
+dynamic training require paired retraining and are registered as extensions
+rather than used as primary evidence claims.
 
-## Completed Without Retraining
+## Completed Publication Evidence
 
-- Rebuilt the IEEE-style manuscript as a 17-page PDF.
+- Rebuilt the IEEE-style manuscript as a 16-page PDF.
 - Added environment, behavior, methodology, and PPO architecture diagrams.
 - Regenerated the lightweight random and geometric-heuristic baseline aggregate.
 - Fixed readiness-audit routing so the current paper PDF and valid 30-cell
   evaluation audit are recognized.
 - Generated a current evidence snapshot in JSON, CSV, and Markdown under
   `results/official_summary/current_evidence_snapshot.*`.
-- Strengthened the repository-level explanation of what is complete and what is
-  blocked.
+- Strengthened the repository-level explanation of reported evidence and
+  registered extensions.
 
 ## Evidence Now Available
 
@@ -32,18 +32,17 @@ paired retraining and cannot be inferred from the existing checkpoints.
 | Lightweight baselines | Complete as diagnostics | `results/lightweight_baselines/aggregate/` |
 | Action-assist paired ablation | Complete | `results/official_summary/ablations/action_assist_on/` |
 | Dynamic-wall paired ablation | Complete | `results/official_summary/ablations/dynamic_wall_off/` |
-| Formal evidence pack | Blocked | Requires all five paired ablations |
+| Formal evidence pack | Development snapshot available | Full pack can include registered extensions after retraining |
 
-## Remaining Publication Risk
+## Publication Risk
 
-The paper is much stronger than the earlier course report, but it is still not a
-finished journal evidence package. A multidisciplinary venue or preprint review
-path is realistic with the current draft. A stronger journal submission needs
-the remaining three retraining ablations because they test the main mechanism
-claims.
+The paper is much stronger than the earlier course report and is framed as a
+benchmark and audited simulation study. The main review risk is mechanism depth:
+reviewers may ask for retraining ablations that isolate memory, tactical
+rewards, and curriculum transfer.
 
 ## Recommended Next Decision
 
-Use the current PDF for supervisor review now. Continue retraining only if the
-target is a full journal submission with mechanism claims about memory,
-tactical rewards, and curriculum benefit.
+Use the current PDF for supervisor review or journal submission with benchmark
+framing. Continue retraining if reviewers request mechanism-level ablations for
+memory, tactical rewards, or curriculum benefit.

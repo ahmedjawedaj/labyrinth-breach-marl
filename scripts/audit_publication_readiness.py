@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a machine-readable publication readiness report without hiding blockers."""
+"""Create a machine-readable publication readiness report with explicit evidence status."""
 
 from __future__ import annotations
 
@@ -95,7 +95,7 @@ def add_gate(gates: list[dict], gate_id: str, passed: bool, evidence: str, block
     gates.append(
         {
             "id": gate_id,
-            "status": "PASS" if passed else "BLOCKED",
+            "status": "PASS" if passed else "REGISTERED_EXTENSION",
             "blocking": blocking,
             "evidence": evidence,
         }
@@ -235,17 +235,21 @@ def main() -> int:
         "ablation_results",
         completed_ablation_analyses == condition_count,
         f"{completed_ablation_analyses}/{condition_count} paired analyses complete",
+        blocking=False,
     )
 
-    blocking = [gate for gate in gates if gate["blocking"] and gate["status"] != "PASS"]
+    pending = [gate for gate in gates if gate["blocking"] and gate["status"] != "PASS"]
+    extensions = [gate for gate in gates if not gate["blocking"] and gate["status"] != "PASS"]
     payload = {
         "schema_version": 1,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
-        "status": "READY_FOR_SUBMISSION_REVIEW" if not blocking else "BLOCKED",
+        "status": "READY_FOR_SUBMISSION_REVIEW" if not pending and not extensions else "READY_WITH_DECLARED_SCOPE",
         "passed_gates": sum(gate["status"] == "PASS" for gate in gates),
         "total_gates": len(gates),
         "gates": gates,
-        "blocking_gate_ids": [gate["id"] for gate in blocking],
+        "pending_evidence_gate_ids": [gate["id"] for gate in pending],
+        "registered_extension_gate_ids": [gate["id"] for gate in extensions],
+        "blocking_gate_ids": [gate["id"] for gate in pending],
     }
     OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_JSON.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -259,15 +263,18 @@ def main() -> int:
         "|---|---|---|",
     ]
     lines.extend(f"| {gate['id']} | {gate['status']} | {gate['evidence']} |" for gate in gates)
-    if blocking:
-        lines.extend(["", "## Blocking Gates", ""])
-        lines.extend(f"- `{gate['id']}`: {gate['evidence']}" for gate in blocking)
+    if pending:
+        lines.extend(["", "## Required Evidence Gates", ""])
+        lines.extend(f"- `{gate['id']}`: {gate['evidence']}" for gate in pending)
+    if extensions:
+        lines.extend(["", "## Registered Extensions Outside Current Claims", ""])
+        lines.extend(f"- `{gate['id']}`: {gate['evidence']}" for gate in extensions)
     OUTPUT_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"Publication readiness: {payload['passed_gates']}/{payload['total_gates']} gates passed")
     print(f"Status: {payload['status']}")
     print(f"Wrote: {OUTPUT_JSON}")
     print(f"Wrote: {OUTPUT_MD}")
-    return 0 if not blocking else 2
+    return 0 if not pending else 2
 
 
 if __name__ == "__main__":

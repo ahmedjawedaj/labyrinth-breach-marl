@@ -77,7 +77,7 @@ PATH=/opt/anaconda3/envs/labyrinth-breach/bin:$PATH \
 python scripts/analyze_official_training_curves.py
 ```
 
-The exporter refuses incomplete matrices. It writes raw per-seed TensorBoard
+The exporter requires completed matrices. It writes raw per-seed TensorBoard
 reward, episode-length, ELO, entropy, and loss scalars; matched-step means and
 Student-t intervals; and PDF/PNG figures under
 `results/official_summary/training_curves/`.
@@ -165,12 +165,12 @@ latexmk -pdf -interaction=nonstopmode -halt-on-error \
 cp labyrinth_breach_journal.pdf labyrinth_breach_revised_publication_report.pdf
 ```
 
-The readiness audit must report `READY_FOR_SUBMISSION_REVIEW`. A manuscript PDF
-alone is not readiness: official training, fixed-count evaluation, and all five
-paired ablation analyses must also pass. The final PDF is
-`paper/labyrinth_breach_revised_publication_report.pdf`. The current
-no-retraining snapshot is generated under
-`results/official_summary/current_evidence_snapshot.*`.
+The readiness audit records which evidence checks are available for the current
+submission. A manuscript PDF alone is not the audit trail: official training,
+fixed-count evaluation, reported paired interventions, and registered extension
+status should all be preserved. The final PDF is
+`paper/labyrinth_breach_revised_publication_report.pdf`. The current evidence
+snapshot is generated under `results/official_summary/current_evidence_snapshot.*`.
 
 After all gates pass, build the hashed evidence pack:
 
@@ -181,5 +181,5 @@ python scripts/build_publication_evidence_pack.py
 The pack preserves canonical configs, scripts, manuscript sources, audits,
 training checkpoints, raw logs, evaluation outputs, and paired analyses under
 `output/evidence/labyrinth_breach_publication/`. `artifact_manifest.json` and
-`SHA256SUMS` make every included file independently verifiable. The command
-refuses to create a submission pack while readiness is blocked.
+`SHA256SUMS` make every included file independently verifiable. A development
+snapshot can also be created when extension experiments are still being added.

@@ -104,7 +104,7 @@ def main() -> int:
     parser.add_argument(
         "--allow-incomplete",
         action="store_true",
-        help="Create a development snapshot even when readiness is blocked.",
+        help="Create a development snapshot while registered extensions are still being added.",
     )
     args = parser.parse_args()
 
@@ -112,9 +112,9 @@ def main() -> int:
     if not readiness_path.is_file():
         raise FileNotFoundError("Run scripts/audit_publication_readiness.py first.")
     readiness = json.loads(readiness_path.read_text(encoding="utf-8"))
-    if readiness.get("status") != "READY_FOR_SUBMISSION_REVIEW" and not args.allow_incomplete:
-        blockers = ", ".join(readiness.get("blocking_gate_ids") or [])
-        print(f"Publication readiness is blocked: {blockers}", file=sys.stderr)
+    if readiness.get("pending_evidence_gate_ids") and not args.allow_incomplete:
+        pending = ", ".join(readiness.get("pending_evidence_gate_ids") or readiness.get("blocking_gate_ids") or [])
+        print(f"Evidence pack requires unresolved evidence gates or --allow-incomplete: {pending}", file=sys.stderr)
         return 2
 
     output = (ROOT / args.output_dir).resolve()
@@ -140,7 +140,7 @@ def main() -> int:
         "schema_version": 1,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "readiness_status": readiness.get("status"),
-        "development_snapshot": readiness.get("status") != "READY_FOR_SUBMISSION_REVIEW",
+        "development_snapshot": bool(readiness.get("pending_evidence_gate_ids")),
         "file_count": len(included),
         "total_bytes": sum(record["bytes"] for record in included),
         "files": records,

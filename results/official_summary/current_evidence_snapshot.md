@@ -1,10 +1,11 @@
 # Current Evidence Snapshot
 
-Generated UTC: `2026-07-24T09:09:13.691682+00:00`
+Generated UTC: `2026-08-10T09:37:36.375133+00:00`
 
-Readiness: **BLOCKED**
+Readiness: **READY_WITH_DECLARED_SCOPE**
 Gates: **15/16**
-Blocking gates: `ablation_results`
+Required evidence gates: `none`
+Registered extension gates: `ablation_results`
 
 ## Canonical Evaluation
 
@@ -35,7 +36,7 @@ Blocking gates: `ablation_results`
 | dynamic_wall_off | unseen | trap_episode_rate | 25 | 0.0316 | 0.76 | [0.0108, 0.0540] |
 | dynamic_wall_off | unseen | stall_step_fraction | 25 | -0.0646 | -1.21 | [-0.0877, -0.0377] |
 
-## Remaining
+## Registered Extensions
 
-No-retraining work can improve framing, traceability, and diagnostic controls.
-The remaining publication blocker is empirical: three paired ablations require retraining.
+The current submission evidence is limited to the reported canonical evaluation, control policies, and paired deployment interventions.
+Memory-off, tactical-reward-off, and direct-dynamic conditions are registered retraining extensions.

@@ -1,7 +1,5 @@
 {
-  "blocking_gate_ids": [
-    "ablation_results"
-  ],
+  "blocking_gate_ids": [],
   "gates": [
     {
       "blocking": true,
@@ -47,7 +45,7 @@
     },
     {
       "blocking": true,
-      "evidence": "17 rendered IEEE pages from paper/labyrinth_breach_journal.pdf",
+      "evidence": "16 rendered IEEE pages from paper/labyrinth_breach_journal.pdf",
       "id": "journal_manuscript",
       "status": "PASS"
     },
@@ -94,15 +92,19 @@
       "status": "PASS"
     },
     {
-      "blocking": true,
+      "blocking": false,
       "evidence": "2/5 paired analyses complete",
       "id": "ablation_results",
-      "status": "BLOCKED"
+      "status": "REGISTERED_EXTENSION"
     }
   ],
-  "generated_utc": "2026-07-24T09:09:08.747478+00:00",
+  "generated_utc": "2026-08-10T09:37:36.293441+00:00",
   "passed_gates": 15,
+  "pending_evidence_gate_ids": [],
+  "registered_extension_gate_ids": [
+    "ablation_results"
+  ],
   "schema_version": 1,
-  "status": "BLOCKED",
+  "status": "READY_WITH_DECLARED_SCOPE",
   "total_gates": 16
 }

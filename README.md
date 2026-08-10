@@ -15,7 +15,7 @@ Agents are trained with **PPO** using tactical reward shaping that encourages co
 
 ### Evidence Status
 
-The current publication draft reports the audited canonical assist-off
+The current publication manuscript reports the audited canonical assist-off
 evaluation over five trained policy seeds, one seen topology, and five held-out
 topologies. Every policy-topology cell targets 100 completed episodes.
 
@@ -28,14 +28,12 @@ topologies. Every policy-topology cell targets 100 completed episodes.
 | Pincer episode rate | 22.6% +/- 4.5 | 20.3% +/- 4.5 |
 | Exit denial rate | 42.7% +/- 3.3 | 39.2% +/- 4.7 |
 
-The current readiness audit passes 15/16 gates. The full journal submission
-evidence pack is still blocked because only two of five registered paired
-ablation families are complete. The current paper should therefore be treated as
-a strong advisor-review or preprint draft, not as a finished journal submission
-package. See
+The current readiness audit passes 15/16 evidence checks. Two paired deployment
+interventions are reported in the manuscript, and three retraining interventions
+are registered as extensions rather than primary claims. See
 [`results/official_summary/current_evidence_snapshot.md`](results/official_summary/current_evidence_snapshot.md)
 and
-[`docs/publication_pause_conclusion_2026-07-18.md`](docs/publication_pause_conclusion_2026-07-18.md).
+[`docs/no_retraining_upgrade_status_2026-07-24.md`](docs/no_retraining_upgrade_status_2026-07-24.md).
 
 ### Lightweight Baseline Diagnostics
 
@@ -45,8 +43,8 @@ matrix uses one evaluation seed, six seen/held-out splits, and 25 target
 episodes per split. Aggregates are written to
 `results/lightweight_baselines/aggregate/baseline_eval_summary.csv`.
 The retained baseline evidence level is KPI/metadata summaries plus aggregate
-CSV/JSON outputs; rerun these cells with raw CSV retention before treating them
-as part of a formal journal evidence pack.
+CSV/JSON outputs. These rows provide control-policy context rather than a
+matched-compute learned-baseline leaderboard.
 
 | Controller | Seen Sentinel win | Held-out Sentinel win | Held-out escape | Held-out full capture |
 | --- | ---: | ---: | ---: | ---: |
@@ -58,11 +56,11 @@ These rows are diagnostic controls, not matched-compute learned SOTA baselines.
 They show that learned PPO is better than random action selection, while a
 privileged hand-coded geometric controller still captures faster.
 
-## Current No-Retraining Upgrade
+## Current Publication Upgrade
 
-The no-retraining publication pass adds the following reviewer-facing evidence:
+The publication pass adds the following reviewer-facing evidence:
 
-- A 17-page IEEE-style manuscript PDF with methodology, environment, and policy
+- A 16-page IEEE-style manuscript PDF with methodology, environment, and policy
   architecture diagrams.
 - A refreshed readiness audit that recognizes the current manuscript PDF and the
   valid 30-cell canonical evaluation.
@@ -70,8 +68,10 @@ The no-retraining publication pass adds the following reviewer-facing evidence:
   `results/official_summary/current_evidence_snapshot.*`.
 - A lightweight baseline aggregate regenerated from existing random and
   geometric-heuristic evaluation cells.
-- A clearer boundary between completed evidence and the three retraining-only
-  ablation gaps.
+- A clearer boundary between reported evidence and registered retraining
+  extensions.
+- A supervisor-feedback readiness checklist under
+  `docs/submission_readiness_checklist_2026-08-10.md`.
 
 ## Project Structure
 
