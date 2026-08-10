@@ -21,6 +21,7 @@ controller performance.
 | Add XAI or interpretation | Manuscript adds artifact-level interpretation using reward audit logs, replay events, and paired deployment interventions |
 | Use current results | Manuscript uses five trained policy seeds, 30 canonical evaluation cells, 3,002 episodes, audited learning curves, lightweight controls, and two paired deployment interventions |
 | Improve reproducibility | Manuscript and docs map each claim to source artifacts and regeneration scripts |
+| Match submission author list | Manuscript and PDF include Ahmed Jawed, Imran Ashraf, Muhammad Sikander Raheem, Usman Irshad Bhatti, Arif Mahmood, Irene Delgado Noya, and Eduardo Garcia Villena |
 | Remove legacy readiness language | Public manuscript, README, readiness summary, and evidence snapshot no longer contain internal caution wording |
 
 ## Ready Artifacts

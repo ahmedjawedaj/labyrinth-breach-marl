@@ -174,5 +174,9 @@ pass the strict training audit.
 ## Authors
 
 - Ahmed Jawed (25280040)
+- Imran Ashraf
 - Muhammad Sikander Raheem (25280017)
 - Usman Irshad Bhatti (25280099)
+- Arif Mahmood
+- Irene Delgado Noya
+- Eduardo Garcia Villena
