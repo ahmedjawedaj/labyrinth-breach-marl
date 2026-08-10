@@ -12,15 +12,23 @@ import time
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 MEMORY_OFF_SEEDS = [42, 101, 202, 606, 707]
 MEMORY_OFF_STAGE4_TARGET_STEPS = 1_500_000
+ABLATION_TRAINING_MATRICES = {
+    "memory_off": "configs/experiment_manifests/official_memory_off_aligned_matrix.yaml",
+    "tactical_reward_off": "configs/experiment_manifests/official_tactical_off_aligned_matrix.yaml",
+    "direct_dynamic_training": "configs/experiment_manifests/official_direct_dynamic_matrix.yaml",
+}
 PROCESS_PATTERNS = [
     "mlagents-learn",
     "LabyrinthBreach.app",
     "MacOS/Labyrinth Breach",
     "scripts/train_with_metadata.py",
     "run_memory_off_stage4",
+    "run_remaining_retraining_ablation_queue",
 ]
 STEP_RE = re.compile(
     r"^\[INFO\]\s+(?P<behavior>\w+)\.\s+Step:\s+(?P<step>\d+)\.\s+"
@@ -149,6 +157,23 @@ def load_json(path: Path) -> dict[str, Any]:
         return {"json_error": "invalid json"}
 
 
+def load_yaml(path: Path) -> dict[str, Any]:
+    if not path.exists() or path.stat().st_size == 0:
+        return {}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return data if isinstance(data, dict) else {}
+
+
+def file_status(path: Path) -> dict[str, Any]:
+    exists = path.exists()
+    return {
+        "path": str(path.relative_to(ROOT)),
+        "exists": exists,
+        "size_bytes": path.stat().st_size if exists else 0,
+        "age_seconds": round(time.time() - path.stat().st_mtime, 1) if exists else None,
+    }
+
+
 def exported_steps(run_dir: Path) -> dict[str, list[int]]:
     exports: dict[str, set[int]] = {"Runner": set(), "Sentinel": set()}
     for behavior in exports:
@@ -160,6 +185,65 @@ def exported_steps(run_dir: Path) -> dict[str, list[int]]:
             if match:
                 exports[behavior].add(int(match.group("step")))
     return {behavior: sorted(values) for behavior, values in exports.items()}
+
+
+def run_id_from_matrix(matrix: dict[str, Any], seed: int, stage: dict[str, Any]) -> str:
+    return str(matrix["run_id_template"]).format(
+        experiment_family=matrix["experiment_family"],
+        seed=seed,
+        stage_id=stage["id"],
+        stage_order=stage.get("order"),
+    )
+
+
+def training_complete(run_dir: Path) -> tuple[bool, str]:
+    status_path = run_dir / "metadata" / "training_status.json"
+    audit_path = run_dir / "metadata" / "training_audit.json"
+    metadata_path = run_dir / "metadata" / "run_metadata.json"
+    required_logs = [
+        run_dir / "logs" / "episode_log.csv",
+        run_dir / "logs" / "agent_step_log.csv",
+        run_dir / "logs" / "reward_audit.csv",
+        run_dir / "logs" / "replay_events.csv",
+    ]
+    required = [status_path, audit_path, metadata_path, *required_logs]
+    missing = [path.name for path in required if not path.exists() or path.stat().st_size == 0]
+    if missing:
+        return False, "missing " + ",".join(missing[:3])
+    status = load_json(status_path)
+    audit = load_json(audit_path)
+    if status.get("success") is not True or status.get("exit_code") != 0:
+        return False, f"status={status.get('status')} success={status.get('success')}"
+    if int(audit.get("failed", 1)) != 0:
+        return False, f"audit_failed={audit.get('failed')}"
+    return True, "complete"
+
+
+def ablation_training_status() -> dict[str, Any]:
+    output: dict[str, Any] = {}
+    for condition_id, matrix_rel in ABLATION_TRAINING_MATRICES.items():
+        matrix = load_yaml(ROOT / matrix_rel)
+        rows: list[dict[str, Any]] = []
+        for seed in [int(seed) for seed in matrix.get("seeds") or []]:
+            for stage in matrix.get("stages") or []:
+                run_id = run_id_from_matrix(matrix, seed, stage)
+                complete, reason = training_complete(ROOT / "results" / run_id)
+                rows.append(
+                    {
+                        "seed": seed,
+                        "stage": stage.get("id"),
+                        "run_id": run_id,
+                        "complete": complete,
+                        "reason": reason,
+                    }
+                )
+        output[condition_id] = {
+            "matrix": matrix_rel,
+            "complete_runs": sum(1 for row in rows if row["complete"]),
+            "expected_runs": len(rows),
+            "incomplete": [row for row in rows if not row["complete"]],
+        }
+    return output
 
 
 def memory_off_stage4_status() -> list[dict[str, Any]]:
@@ -231,7 +315,9 @@ def build_status() -> dict[str, Any]:
         "disk": disk_status(),
         "memory_off_seed101_log": seed101_log,
         "memory_off_remaining_log": rest_log,
+        "ablation_queue_log": file_status(ROOT / "logs" / "remaining_retraining_ablation_queue.log"),
         "memory_off_stage4": memory_off_stage4_status(),
+        "ablation_training": ablation_training_status(),
         "memory_off_tracker": completion_tracker_status(),
         "paired_ablations": paired_ablation_status(),
         "next_action": next_action(active_processes, seed101_log),
@@ -273,6 +359,8 @@ def print_text(status: dict[str, Any]) -> None:
         print(f"  pid={process['pid']} elapsed={process['etime']} command={command[:140]}")
     disk = status["disk"]
     print(f"Disk: {disk['free_gib']} GiB free, {disk['used_percent']}% used")
+    queue_log = status["ablation_queue_log"]
+    print(f"Ablation queue log: exists={queue_log['exists']} age={queue_log['age_seconds']}s")
     latest = status["memory_off_seed101_log"]["latest_steps"]
     print(f"Seed101 log age: {status['memory_off_seed101_log']['age_seconds']}s")
     if latest:
@@ -285,6 +373,15 @@ def print_text(status: dict[str, Any]) -> None:
             )
     else:
         print("Seed101 latest step: unavailable")
+    for condition_id, condition in status["ablation_training"].items():
+        incomplete = condition["incomplete"]
+        print(
+            f"{condition_id} training: {condition['complete_runs']}/{condition['expected_runs']} complete"
+        )
+        for row in incomplete[:5]:
+            print(f"  missing {row['seed']} {row['stage']} {row['reason']}")
+        if len(incomplete) > 5:
+            print(f"  ... {len(incomplete) - 5} more incomplete")
     tracker = status["memory_off_tracker"]
     print(
         f"Memory-off tracker: all_complete={tracker['all_complete']} "
