@@ -60,6 +60,32 @@ def summarize_baselines(rows: list[dict[str, str]]) -> list[dict[str, object]]:
     return summary
 
 
+def summarize_memory_off_checkpoint(path: Path) -> dict[str, object]:
+    if not path.is_file():
+        return {
+            "available": False,
+            "detail": f"missing {path.relative_to(ROOT)}",
+        }
+    data = read_json(path)
+    return {
+        "available": True,
+        "run_id": data["run_id"],
+        "seed": data["seed"],
+        "stage_id": data["stage_id"],
+        "episodes": data["episodes"],
+        "sentinel_win_rate": data["sentinel_win_rate"],
+        "runner_win_rate": data["runner_win_rate"],
+        "escape_rate": data["escape_rate"],
+        "mean_time_to_full_capture_seconds": data["mean_time_to_full_capture_seconds"],
+        "target_reacquisition_seconds_mean": data["target_reacquisition_seconds_mean"],
+        "pincer_episode_rate": data["pincer_episode_rate"],
+        "exit_denial_episode_rate": data["exit_denial_episode_rate"],
+        "trap_episode_rate": data["trap_episode_rate"],
+        "control_audit_passed": data["control_audit_passed"],
+        "claim_scope": data["claim_scope"],
+    }
+
+
 def effect_lookup(path: Path, group: str, metric: str) -> dict[str, float | int | str]:
     data = read_json(path)
     for row in data.get("effects") or []:
@@ -87,6 +113,7 @@ def main() -> int:
     )
     action_effects = OUTPUT_DIR / "ablations" / "action_assist_on" / "paired_effects.json"
     wall_effects = OUTPUT_DIR / "ablations" / "dynamic_wall_off" / "paired_effects.json"
+    memory_checkpoint = OUTPUT_DIR / "memory_off_checkpoint_summary.json"
 
     key_effects = [
         effect_lookup(action_effects, "unseen", "sentinel_win"),
@@ -113,6 +140,7 @@ def main() -> int:
         "official_evaluation": official_eval["group_summary"],
         "lightweight_baselines": summarize_baselines(baseline_rows),
         "completed_ablation_effects": key_effects,
+        "completed_memory_off_checkpoint": summarize_memory_off_checkpoint(memory_checkpoint),
         "submission_polish_without_retraining": [
             "tighten claims and threat framing",
             "strengthen literature synthesis",
@@ -155,6 +183,19 @@ def main() -> int:
                 "sentinel_win_rate": row["sentinel_win_rate_mean"],
                 "escape_rate": row["escape_rate_mean"],
                 "detail": "evaluation-only action override",
+            }
+        )
+    memory_summary = payload["completed_memory_off_checkpoint"]
+    if memory_summary.get("available"):
+        csv_rows.append(
+            {
+                "section": "memory_off_checkpoint",
+                "item": memory_summary["run_id"],
+                "cells": "",
+                "episodes": memory_summary["episodes"],
+                "sentinel_win_rate": memory_summary["sentinel_win_rate"],
+                "escape_rate": memory_summary["escape_rate"],
+                "detail": memory_summary["claim_scope"],
             }
         )
 
@@ -211,6 +252,33 @@ def main() -> int:
             f"{pct(row['sentinel_win_rate_mean'])} | {pct(row['escape_rate_mean'])} | "
             f"{row['full_capture_seconds_mean']:.2f} s | {pct(row['pincer_episode_rate_mean'])} |"
         )
+
+    memory_summary = payload["completed_memory_off_checkpoint"]
+    lines.extend(
+        [
+            "",
+            "## Memory-Off Checkpoint Audit",
+            "",
+        ]
+    )
+    if memory_summary.get("available"):
+        lines.extend(
+            [
+                "| Run | Seed | Stage | Episodes | Sentinel win | Escape | Full capture | Reacquisition | Control audit |",
+                "| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |",
+                "| "
+                f"{memory_summary['run_id']} | {memory_summary['seed']} | {memory_summary['stage_id']} | "
+                f"{memory_summary['episodes']} | {pct(memory_summary['sentinel_win_rate'])} | "
+                f"{pct(memory_summary['escape_rate'])} | "
+                f"{memory_summary['mean_time_to_full_capture_seconds']:.2f} s | "
+                f"{memory_summary['target_reacquisition_seconds_mean']:.2f} s | "
+                f"{memory_summary['control_audit_passed']} |",
+                "",
+                "This is a completed single-seed checkpoint audit, not a full five-seed paired memory ablation result.",
+            ]
+        )
+    else:
+        lines.append(str(memory_summary["detail"]))
 
     lines.extend(
         [
